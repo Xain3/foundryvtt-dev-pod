@@ -1,0 +1,14 @@
+# Override to force installs from local cache archives during container creation.
+# Use alongside compose.dev.yml when doing down/up cycles:
+#   docker compose -f compose.dev.yml -f compose.dev.cache.yml up -d
+
+services:
+  foundry-v13:
+    environment:
+      - FOUNDRY_RELEASE_URL=file:///data/container_cache/foundryvtt-13.347.zip
+  foundry-v12:
+    environment:
+      - FOUNDRY_RELEASE_URL=file:///data/container_cache/foundryvtt-12.343.zip
+  foundry-v11:
+    environment:
+      - FOUNDRY_RELEASE_URL=file:///data/container_cache/foundryvtt-11.315.zip
