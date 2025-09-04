@@ -1,7 +1,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { spawnSync } = require('node:child_process');
 
 function tmpDir() { return fs.mkdtempSync(path.join(os.tmpdir(), 'uc-')); }
 
