@@ -4,6 +4,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_COMPOSE_FILE="$SCRIPT_DIR/../compose.dev.yml"
+#!/usr/bin/env bash
+# Small access point wrapper around compose.dev.yml.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_COMPOSE_FILE="$SCRIPT_DIR/../compose.dev.yml"
 
 # Initialize COMPOSE_FILE but don't validate yet
 COMPOSE_FILE="${COMPOSE_FILE:-}"
@@ -60,7 +66,7 @@ while [ "$#" -gt 0 ]; do
 			cmd="$1"; shift; break;;
 		*)
 			cmd="$1"; shift; break;;
-	esac
+		esac
 done
 
 # Now resolve and validate the compose file
@@ -96,7 +102,6 @@ execute_or_dry_run() {
 	fi
 	"$@"
 }
-
 case "$cmd" in
 	help|-h|--help)
 		usage

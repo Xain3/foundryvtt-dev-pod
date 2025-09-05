@@ -83,7 +83,7 @@ describe('scripts/generate-compose.js', () => {
     };
     fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
 
-    const output = runNode(`${scriptPath} --dry-run -c ${cfgPath} -o ${outPath}`);
+  const output = runNode(`${scriptPath} --dry-run -c ${cfgPath} -o ${outPath}`);
     
     expect(output).toContain('[dry-run] Would generate compose YAML from config:');
     expect(output).toContain(cfgPath);
@@ -102,7 +102,7 @@ describe('scripts/generate-compose.js', () => {
     };
     fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
 
-    const output = runNode(`${scriptPath} -n -c ${cfgPath}`);
+  const output = runNode(`${scriptPath} -n -c ${cfgPath}`);
     
     expect(output).toContain('[dry-run] Would generate compose YAML from config:');
     expect(output).toContain('[dry-run] Would write to: stdout');
