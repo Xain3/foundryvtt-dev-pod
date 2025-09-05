@@ -8,7 +8,6 @@ import {
   validateConfig,
   validateConfigWithCache,
   calculateFileHash,
-  runConfigValidation,
   logValidationErrors,
   logValidationSuccess,
   checkConfigWithCache,
@@ -650,8 +649,6 @@ describe('Internal functions', () => {
   let tempDir;
   let validConfigPath;
   let invalidConfigPath;
-  const repoRoot = path.resolve(__dirname, '../../..');
-
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'validate-config-internal-test-'));
 
@@ -918,55 +915,4 @@ describe('Internal functions', () => {
     });
   });
 
-  describe('runConfigValidation function', () => {
-    let originalShowHelpMessage;
-    let originalParseCommandLineArgs;
-    let originalCheckConfigWithCache;
-    let originalLogValidationSuccess;
-    let originalLogValidationErrors;
-    let processExitSpy;
-    let mod;
-
-    beforeEach(async () => {
-      // Mock process.exit to prevent test termination
-      processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
-
-      // Import the module for testing
-      mod = await import('../../../scripts/validate-config.js');
-      
-      // Save original functions
-      originalShowHelpMessage = mod.showHelpMessage;
-      originalParseCommandLineArgs = mod.parseCommandLineArgs;
-      originalCheckConfigWithCache = mod.checkConfigWithCache;
-      originalLogValidationSuccess = mod.logValidationSuccess;
-      originalLogValidationErrors = mod.logValidationErrors;
-
-      // Note: In ESM, we can't easily monkey-patch module exports like in CommonJS
-      // So these tests will need to be adapted or skipped for now
-    });
-
-    afterEach(() => {
-      // Restore process.exit
-      processExitSpy.mockRestore();
-
-      // Note: In ESM, we can't easily restore monkey-patched functions
-      // These tests will need to be redesigned for ESM compatibility
-    });
-
-    test.skip('calls showHelpMessage with args', () => {
-      // Skipped: ESM modules don't support monkey-patching like CommonJS
-    });
-
-    test.skip('calls showHelpMessage when no args provided', () => {
-      // Skipped: ESM modules don't support monkey-patching like CommonJS
-    });
-
-    test.skip('parses command line args when help not shown', () => {
-      // Skipped: ESM modules don't support monkey-patching like CommonJS
-    });
-
-    test.skip('logs validation errors when result invalid', () => {
-      // Skipped: ESM modules don't support monkey-patching like CommonJS
-    });
-  });
 });
