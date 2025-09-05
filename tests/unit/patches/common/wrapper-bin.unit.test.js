@@ -1,4 +1,6 @@
 import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { jest } from '@jest/globals';
 import { runBashScript } from '../../../utils/shell.js';
@@ -66,11 +68,9 @@ describe('wrapper-lib.sh normalization', () => {
   it('skips invalid normalized paths in collect_wrapper_targets', async () => {
     // Build a small shim that sources wrapper-lib and calls collect_wrapper_targets
     const shim = `#!/usr/bin/env bash\nset -euo pipefail\nsource '${wrapperLib}'\ncollect_wrapper_targets '${commonDir}' 'mjs' --wrapper-target 'does-not-exist,install-components'`;
-  const os = require('os');
-  const fs = require('fs/promises');
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'omh-shim-'));
-  const shimPath = path.join(tmpDir, 'shim_collect.sh');
-  await fs.writeFile(shimPath, shim, { mode: 0o755 });
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'omh-shim-'));
+    const shimPath = path.join(tmpDir, 'shim_collect.sh');
+    await fs.writeFile(shimPath, shim, { mode: 0o755 });
     try {
       const res = await runBashScript(shimPath, [], {});
       // Should output only valid target(s) that resolve under commonDir
