@@ -17,8 +17,8 @@ describe('wrapper scripts dry-run', () => {
   // Entry-point wrappers live in ../entrypoint, while .mjs files live in this common dir
   const baseDir = __dirname;
   // Tests run from tests/unit/patches/entrypoint; wrappers live in
-  // docker/patches/entrypoint at repository root
-  const wrapperDir = path.join(__dirname, '..', '..', '..', '..', 'docker', 'patches', 'entrypoint');
+  // patches/entrypoint at repository root
+  const wrapperDir = path.join(__dirname, '..', '..', '..', '..', 'patches', 'entrypoint');
 
   describe('00-use-cache-or-stagger.sh', () => {
   const script = path.join(wrapperDir, '00-use-cache-or-stagger.sh');

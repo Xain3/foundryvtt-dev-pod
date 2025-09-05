@@ -5,18 +5,26 @@
   "license": "MIT",
   "type": "commonjs",
   "bin": {
-    "fvtt-compose-gen": "docker/scripts/generate-compose.js",
-    "fvtt-pod": "docker/scripts/pod-handler.sh"
+    "fvtt-compose-gen": "scripts/generate-compose.js",
+    "fvtt-pod": "scripts/pod-handler.sh"
   },
   "files": [
-    "docker/scripts/generate-compose.js",
-    "docker/scripts/pod-handler.sh",
-    "docker/patches/",
+    "scripts/generate-compose.js",
+    "scripts/pod-handler.sh",
+    "patches/",
     "README.md",
     "LICENSE"
   ],
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
+    "ajv": "^8.17.1",
     "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "jest": "^30.1.3"
   }
 }

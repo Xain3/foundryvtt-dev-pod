@@ -1,0 +1,104 @@
+{
+  "systems": {
+    "example_system": {
+      "name": "Example System",
+      "manifest": "",
+      "path": "/data/container_cache/example-system.zip",
+      "install_at_startup": true
+    },
+    "system_to_override": {
+      "name": "System To Override",
+      "manifest": "https://example.com/system-to-override.json",
+      "path": "",
+      "install_at_startup": true
+    }
+  },
+  "modules": {
+    "example_module": {
+      "name": "Example Module",
+      "manifest": "https://example.com/module.json",
+      "path": "",
+      "install_at_startup": true
+    },
+    "module_to_override": {
+      "name": "Module To Override",
+      "manifest": "",
+      "path": "/data/container_cache/module-to-override.zip",
+      "install_at_startup": true
+    }
+  },
+  "worlds": {
+    "example_world": {
+      "name": "Example World",
+      "manifest": "https://example.com/world.json",
+  "path": "../examples/shared/v13/worlds/example_world",
+      "install_at_startup": false,
+      "check_presence": true
+    },
+    "world_to_override": {
+      "name": "World To Override",
+      "manifest": "",
+  "path": "../examples/shared/v13/worlds/world_to_override",
+      "install_at_startup": false
+    }
+  },
+  "composition": {
+    "baseImage": "felddy/foundryvtt",
+    "user": "0:0",
+    "version_params": {
+      "name": "foundry-v{version}",
+      "tag": "release",
+      "port": "300{version}",
+      "versionDir": "v{version}",
+      "envSuffix": "v{version}"
+    },
+    "builder": {
+      "enabled": true,
+      "image": "node:20-alpine"
+    }
+  },
+  "versions": {
+    "09": {
+      "supported": false,
+      "install": {
+        "systems": {
+          "example_system": {},
+          "system_to_override": {
+            "name": "Overridden System",
+            "manifest": "",
+            "path": "/data/container_cache/system-to-override-override.zip"
+          }
+        },
+        "modules": {
+          "example_module": {
+            "name": "Overridden Module",
+            "manifest": "https://overridden-example.com/module.json",
+            "path": ""
+          },
+          "module_to_override": {}
+        },
+        "worlds": {
+          "example_world": { "continuous_sync": true },
+          "world_to_override": {
+            "name": "Overridden World",
+            "manifest": "",
+            "path": "/data/container_cache/world-to-override-override.zip",
+            "install_at_startup": true,
+            "check_presence": true
+          }
+        }
+      }
+    },
+    "12": {
+      "supported": true,
+      "install": {
+        "systems": { "example_system": {} },
+        "modules": { "example_module": {} }
+      },
+      "composition_params": {
+        "name": "custom-v12",
+        "port": 31234
+      }
+    }
+  }
+}

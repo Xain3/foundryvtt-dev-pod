@@ -1,0 +1,141 @@
+secrets:
+  config_json:
+    file: ./secrets.json
+
+volumes:
+  foundry-v13-data:
+  foundry-v12-data:
+  foundry-v11-data:
+
+services:
+  foundry-v13:
+    image: felddy/foundryvtt:release
+    container_name: foundry-v13
+    hostname: foundry-v13
+    user: "0:0"
+    ports:
+      - "30013:30000"
+    volumes:
+      - foundry-v13-data:/data
+      - type: bind
+        source: ./container-config.json
+        target: /config/container-config.json
+        read_only: true
+      - type: bind
+        source: ../dist
+        target: /host/dist
+        read_only: true
+      - type: bind
+        source: ./patches
+        target: /container_patches
+      - type: bind
+        source: ./shared/v13
+        target: /host/shared
+        read_only: false
+      - type: bind
+        source: ./resources/v13
+        target: /host/resources
+        read_only: true
+      # Worlds now sync via /host/shared/worlds; no direct test-world bind
+      - type: bind
+        source: ./foundry-cache/v13
+        target: /data/container_cache
+    secrets:
+      - source: config_json
+        target: config.json
+    env_file:
+      - ./env/.env # Common env vars for all versions
+      - ./env/.v13.env # Loaded second, can override any duplicates from above
+    environment: # overrides any value for this variable from env files
+      - FETCH_STAGGER_SECONDS=4
+
+  foundry-v12:
+    image: felddy/foundryvtt:12
+    container_name: foundry-v12
+    hostname: foundry-v12
+    user: "0:0"
+    ports:
+      - "30012:30000"
+    volumes:
+      - foundry-v12-data:/data
+      - type: bind
+        source: ./container-config.json
+        target: /config/container-config.json
+        read_only: true
+      - type: bind
+        source: ../dist
+        target: /host/dist
+        read_only: true
+      - type: bind
+        source: ./patches
+        target: /container_patches
+      - type: bind
+        source: ./shared/v12
+        target: /host/shared
+        read_only: false
+      - type: bind
+        source: ./resources/v12
+        target: /host/resources
+        read_only: true
+      # Worlds now sync via /host/shared/worlds; no direct test-world bind
+      - type: bind
+        source: ./foundry-cache/v12
+        target: /data/container_cache
+    secrets:
+      - source: config_json
+        target: config.json
+    env_file:
+      - ./env/.env # Common env vars for all versions
+      - ./env/.v12.env # Loaded second, can override any duplicates from above
+    environment: # overrides any value for this variable from env files
+      - FETCH_STAGGER_SECONDS=2
+
+  foundry-v11:
+    image: felddy/foundryvtt:11
+    container_name: foundry-v11
+    hostname: foundry-v11
+    user: "0:0"
+    ports:
+      - "30011:30000"
+    volumes:
+      - foundry-v11-data:/data
+      - type: bind
+        source: ./container-config.json
+        target: /config/container-config.json
+        read_only: true
+      - type: bind
+        source: ../dist
+        target: /host/dist
+        read_only: true
+      - type: bind
+        source: ./patches
+        target: /container_patches
+      # Worlds now sync via /host/shared/worlds; no direct test-world bind
+      - type: bind
+        source: ./foundry-cache/v11
+        target: /data/container_cache
+      - type: bind
+        source: ./shared/v11
+        target: /host/shared
+        read_only: false
+      - type: bind
+        source: ./resources/v11
+        target: /host/resources
+        read_only: true
+    secrets:
+      - source: config_json
+        target: config.json
+    env_file:
+      - ./env/.env # Common env vars for all versions
+      - ./env/.v11.env # Loaded second, can override any duplicates from above
+    environment: # overrides any value for this variable from env files
+      - FETCH_STAGGER_SECONDS=0
+
+  builder:
+    image: node:20-alpine
+    container_name: module-builder
+    working_dir: /work
+    command: sh -c "npm ci && npx vite build --watch"
+    volumes:
+      - ../:/work
+    restart: unless-stopped

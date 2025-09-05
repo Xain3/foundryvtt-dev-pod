@@ -1,0 +1,269 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://xain3.github.io/foundryvtt-over-my-head/schemas/container-config.schema.json",
+  "title": "Container Config Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "composition": {
+      "type": "object",
+      "description": "Global docker compose parameters (defaults and builder settings)",
+      "additionalProperties": true,
+      "properties": {
+        "baseImage": { "type": "string", "description": "Base image for Foundry services", "default": "felddy/foundryvtt" },
+        "user": { "type": "string", "description": "User to run services as (e.g. 0:0)" },
+        "version_params": {
+          "type": "object",
+          "description": "Default per-version composition params with templating support; applied unless overridden by versions.<N>.composition_params.",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "$ref": "#/definitions/templatedString", "description": "Service name template, e.g. foundry-v{version}" },
+            "tag": { "$ref": "#/definitions/templatedString", "description": "Image tag template, e.g. release or {version}" },
+            "port": { "$ref": "#/definitions/templatedNumber", "description": "Host port number or template like 300{version}" },
+            "versionDir": { "$ref": "#/definitions/templatedString", "description": "Directory suffix template, e.g. v{version}" },
+            "envSuffix": { "$ref": "#/definitions/templatedString", "description": "Env file suffix template, e.g. v{version}" }
+          },
+          "default": {}
+        },
+        "builder": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "description": "Include builder service", "default": true },
+            "image": { "type": "string", "description": "Builder image", "default": "node:20-alpine" }
+          },
+          "default": { "enabled": true, "image": "node:20-alpine" }
+        }
+      }
+    },
+    "systems": {
+      "type": "object",
+      "description": "A mapping of system identifiers to their configuration",
+      "additionalProperties": {
+        "$ref": "#/definitions/item"
+      },
+      "default": {}
+    },
+    "modules": {
+      "type": "object",
+      "description": "A mapping of module identifiers to their configuration",
+      "additionalProperties": {
+        "$ref": "#/definitions/item"
+      },
+      "default": {}
+    },
+    "worlds": {
+      "type": "object",
+      "description": "A mapping of world identifiers to their configuration",
+      "additionalProperties": {
+        "$ref": "#/definitions/item"
+      },
+      "default": {}
+    },
+    "versions": {
+      "type": "object",
+      "description": "A mapping of Foundry VTT version numbers to their configuration",
+      "patternProperties": {
+        "^\\d{1,2}$": {
+          "$ref": "#/definitions/versionConfig"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["systems", "modules", "versions"],
+  "definitions": {
+    "templatedString": {
+      "type": "string",
+      "description": "A string that may include the placeholder {version} which will be substituted with the specific Foundry version (e.g. 'foundry-v{version}')."
+    },
+    "templatedNumber": {
+      "oneOf": [
+        { "type": "number" },
+        {
+          "type": "string",
+          "pattern": "^[0-9]*\\{version\\}[0-9]*$",
+          "description": "A numeric template containing {version}, e.g. '300{version}'."
+        }
+      ],
+      "description": "A concrete number or a string template that produces a number after substituting {version}."
+    },
+    "volumeMount": {
+      "type": "object",
+      "description": "Additional compose volume mount",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["bind", "volume", "tmpfs"], "description": "Mount type (bind recommended)" },
+        "source": { "type": "string", "description": "Host source path or named volume" },
+        "target": { "type": "string", "description": "Container target path" },
+        "read_only": { "type": "boolean", "description": "Mount read-only flag" }
+      },
+      "required": ["type", "target"]
+    },
+    "item": {
+      "type": "object",
+      "description": "Configuration for a single system, module, or world",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The display name of the item"
+        },
+        "manifest": {
+          "type": "string",
+          "description": "The URL to the manifest file. Provide either a non-empty 'manifest' (URL) or a non-empty local 'file' path.",
+          "anyOf": [
+            { "type": "string", "format": "uri" },
+            { "type": "string", "maxLength": 0 }
+          ]
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to a local archive or directory, or a URL. Provide either a non-empty 'path' or a non-empty URL in 'manifest'.",
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "string", "maxLength": 0 }
+          ]
+        },
+        "install_at_startup": {
+          "type": "boolean" ,
+          "description": "Whether to install this item at startup"
+        },
+        "continuous_sync": {
+          "description": "Enable continuous sync for this item. Boolean true uses type defaults; object allows overrides.",
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean", "description": "Enable continuous sync for this item" },
+                "direction": {
+                  "type": "string",
+                  "enum": ["host-to-container", "bidirectional"],
+                  "description": "Sync direction. Defaults: worlds=host-to-container, modules/systems=bidirectional"
+                },
+                "source": { "type": "string", "description": "Host source path. Defaults: worlds=/host/shared/worlds/<id>, modules=/host/resources/modules/<id>, systems=/host/resources/systems/<id>" },
+                "delete": { "type": "boolean", "description": "When host-to-container, delete files not present in source (default false for worlds, true for others)" },
+                "interval": { "type": "number", "minimum": 1, "description": "Optional per-item sync interval in seconds (falls back to SYNC_INTERVAL)" }
+              }
+            }
+          ]
+        },
+        "check_presence": {
+          "type": "boolean",
+          "description": "If true, emit a non-blocking warning when the item is not present at startup (or after install if install_at_startup=true)."
+        }
+      },
+      "required": ["name"],
+      "allOf": [
+        {
+          "anyOf": [
+            { "properties": { "manifest": { "type": "string", "minLength": 1 } } },
+            { "properties": { "path": { "type": "string", "minLength": 1 } } }
+          ]
+        }
+      ]
+    },
+    "versionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "supported": {
+          "type": "boolean",
+          "description": "Whether this Foundry version is actively supported and should be loaded by default",
+          "default": true
+        },
+        "composition_params": {
+          "type": "object",
+          "description": "Per-version compose overrides and additions",
+          "additionalProperties": true,
+          "properties": {
+            "name": { "type": "string", "description": "Service name (e.g. foundry-v13)" },
+            "tag": { "type": "string", "description": "Image tag (e.g. release, 13, 12, 11)" },
+            "port": { "type": "number", "description": "Host port to map to container 30000" },
+            "versionDir": { "type": "string", "description": "Directory suffix for mounts (e.g. v13)" },
+            "envSuffix": { "type": "string", "description": "Suffix used for env file (defaults to versionDir)" },
+            "fetchStaggerSeconds": { "type": "number", "description": "Value for FETCH_STAGGER_SECONDS" },
+            "env_files": { "type": "array", "items": { "type": "string" }, "description": "Additional env files to include after the defaults" },
+            "environment": {
+              "description": "Additional environment variables to include",
+              "oneOf": [
+                { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] } },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "volumes_extra": { "type": "array", "items": { "$ref": "#/definitions/volumeMount" }, "description": "Additional volumes to append to the defaults" }
+          }
+        },
+        "install": {
+          "type": "object",
+          "description": "Configuration for what to install for this Foundry VTT version. Each map's key is the id from the top-level maps; the value is an optional partial override for that id.",
+          "additionalProperties": false,
+          "properties": {
+            "systems": {
+              "type": "object",
+              "description": "Map of system ids to optional per-version overrides. Use an empty object {} to install as-is.",
+              "additionalProperties": { "$ref": "#/definitions/itemPartial" },
+              "default": {}
+            },
+            "modules": {
+              "type": "object",
+              "description": "Map of module ids to optional per-version overrides. Use an empty object {} to install as-is.",
+              "additionalProperties": { "$ref": "#/definitions/itemPartial" },
+              "default": {}
+            },
+            "worlds": {
+              "type": "object",
+              "description": "Map of world ids to optional per-version overrides. Use an empty object {} to install as-is.",
+              "additionalProperties": { "$ref": "#/definitions/itemPartial" },
+              "default": {}
+            }
+          },
+          "required": ["systems", "modules"]
+        }
+      },
+      "required": ["install"]
+    },
+    "itemPartial": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "manifest": {
+          "type": "string",
+          "anyOf": [
+            { "type": "string", "format": "uri" },
+            { "type": "string", "maxLength": 0 }
+          ]
+        },
+        "path": {
+          "type": "string",
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "string", "maxLength": 0 }
+          ]
+        },
+        "install_at_startup": { "type": "boolean" },
+        "continuous_sync": {
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "direction": { "type": "string", "enum": ["host-to-container", "bidirectional"] },
+                "source": { "type": "string" },
+                "delete": { "type": "boolean" },
+                "interval": { "type": "number", "minimum": 1 }
+              }
+            }
+          ]
+        },
+        "check_presence": { "type": "boolean" }
+      }
+    }
+  }
+}

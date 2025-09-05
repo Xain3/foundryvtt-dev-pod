@@ -1,0 +1,38 @@
+# Compose override to run Foundry containers as non-root.
+# Use together with compose.dev.yml:
+#   docker compose -f compose.dev.yml -f compose.dev.nonroot.yml up -d
+#
+# This mounts a host-owned `/data` for each version and sets
+# FOUNDRY_UID/GID so Foundry runs unprivileged. The host directories
+# should be owned by your user (UID/GID) so the container can write.
+
+services:
+  foundry-v13:
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      - FOUNDRY_UID=${UID:-1000}
+      - FOUNDRY_GID=${GID:-1000}
+    volumes:
+      - type: bind
+        source: ../foundry-data/v13
+        target: /data
+
+  foundry-v12:
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      - FOUNDRY_UID=${UID:-1000}
+      - FOUNDRY_GID=${GID:-1000}
+    volumes:
+      - type: bind
+        source: ../foundry-data/v12
+        target: /data
+
+  foundry-v11:
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      - FOUNDRY_UID=${UID:-1000}
+      - FOUNDRY_GID=${GID:-1000}
+    volumes:
+      - type: bind
+        source: ../foundry-data/v11
+        target: /data
