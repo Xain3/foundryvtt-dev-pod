@@ -126,7 +126,7 @@ describe('scripts/generate-compose.js', () => {
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_gcp');
     expect(result.topLevel.config_json_gcp).toHaveProperty('file');
-    expect(result.topLevel.config_json_gcp.file).toMatch(/^\/tmp\/secrets-\d+\.json$/);
+    expect(result.topLevel.config_json_gcp.file).toMatch(/^\/tmp\/secrets-gcp-\d+\.json$/);
     
     expect(result.serviceRef).toEqual([{
       source: 'config_json_gcp',
@@ -217,6 +217,226 @@ describe('scripts/generate-compose.js', () => {
       expect(args.secretsMode).toBe('gcp');
       expect(args.secretsGcpProject).toBe('env-project');
       expect(args.secretsGcpSecret).toBe('env-secret');
+    } finally {
+      process.env = originalEnv;
+    }
+  });
+
+  test('supports Azure secrets mode with vault and secret name', () => {
+    const mockSecretContent = '{"foundry_license": "azure-license", "foundry_password": "azure-password"}';
+    const mockRetrieveAzureSecret = jest.fn().mockReturnValue(mockSecretContent);
+
+    const result = generateCompose.resolveSecrets({
+      secretsMode: 'azure',
+      secretsAzureVault: 'test-vault',
+      secretsAzureSecret: 'test-secret',
+      secretsTarget: 'config.json'
+    }, undefined, mockRetrieveAzureSecret);
+
+    expect(result.topLevel).toBeTruthy();
+    expect(Object.keys(result.topLevel)).toContain('config_json_azure');
+    expect(result.topLevel.config_json_azure).toHaveProperty('file');
+    expect(result.topLevel.config_json_azure.file).toMatch(/^\/tmp\/secrets-azure-\d+\.json$/);
+    
+    expect(result.serviceRef).toEqual([{
+      source: 'config_json_azure',
+      target: 'config.json'
+    }]);
+
+    // Verify the Azure function was called correctly
+    expect(mockRetrieveAzureSecret).toHaveBeenCalledWith('test-vault', 'test-secret');
+
+    // Verify the secret content was written to the file
+    const secretFile = result.topLevel.config_json_azure.file;
+    expect(fs.existsSync(secretFile)).toBe(true);
+    expect(fs.readFileSync(secretFile, 'utf8')).toBe(mockSecretContent);
+    
+    // Clean up temp file
+    fs.unlinkSync(secretFile);
+  });
+
+  test('auto-detects Azure mode when vault and secret are provided', () => {
+    const mockSecretContent = '{"foundry_license": "azure-auto-license"}';
+    const mockRetrieveAzureSecret = jest.fn().mockReturnValue(mockSecretContent);
+
+    const result = generateCompose.resolveSecrets({
+      secretsMode: 'auto',
+      secretsAzureVault: 'auto-vault',
+      secretsAzureSecret: 'auto-secret'
+    }, undefined, mockRetrieveAzureSecret);
+
+    expect(result.topLevel).toBeTruthy();
+    expect(Object.keys(result.topLevel)).toContain('config_json_azure');
+    expect(result.serviceRef).toEqual([{
+      source: 'config_json_azure',
+      target: 'config.json'
+    }]);
+
+    expect(mockRetrieveAzureSecret).toHaveBeenCalledWith('auto-vault', 'auto-secret');
+    
+    // Clean up temp file
+    const secretFile = result.topLevel.config_json_azure.file;
+    if (fs.existsSync(secretFile)) {
+      fs.unlinkSync(secretFile);
+    }
+  });
+
+  test('throws error when Azure command fails', () => {
+    const mockRetrieveAzureSecret = jest.fn().mockImplementation(() => {
+      throw new Error('Command failed: az keyvault secret show');
+    });
+
+    expect(() => {
+      generateCompose.resolveSecrets({
+        secretsMode: 'azure',
+        secretsAzureVault: 'fail-vault',
+        secretsAzureSecret: 'fail-secret'
+      }, undefined, mockRetrieveAzureSecret);
+    }).toThrow('Failed to retrieve Azure secret: Command failed: az keyvault secret show');
+  });
+
+  test('supports AWS secrets mode with region and secret name', () => {
+    const mockSecretContent = '{"foundry_license": "aws-license", "foundry_password": "aws-password"}';
+    const mockRetrieveAwsSecret = jest.fn().mockReturnValue(mockSecretContent);
+
+    const result = generateCompose.resolveSecrets({
+      secretsMode: 'aws',
+      secretsAwsRegion: 'us-east-1',
+      secretsAwsSecret: 'test-secret',
+      secretsTarget: 'config.json'
+    }, undefined, undefined, mockRetrieveAwsSecret);
+
+    expect(result.topLevel).toBeTruthy();
+    expect(Object.keys(result.topLevel)).toContain('config_json_aws');
+    expect(result.topLevel.config_json_aws).toHaveProperty('file');
+    expect(result.topLevel.config_json_aws.file).toMatch(/^\/tmp\/secrets-aws-\d+\.json$/);
+    
+    expect(result.serviceRef).toEqual([{
+      source: 'config_json_aws',
+      target: 'config.json'
+    }]);
+
+    // Verify the AWS function was called correctly
+    expect(mockRetrieveAwsSecret).toHaveBeenCalledWith('us-east-1', 'test-secret');
+
+    // Verify the secret content was written to the file
+    const secretFile = result.topLevel.config_json_aws.file;
+    expect(fs.existsSync(secretFile)).toBe(true);
+    expect(fs.readFileSync(secretFile, 'utf8')).toBe(mockSecretContent);
+    
+    // Clean up temp file
+    fs.unlinkSync(secretFile);
+  });
+
+  test('auto-detects AWS mode when region and secret are provided', () => {
+    const mockSecretContent = '{"foundry_license": "aws-auto-license"}';
+    const mockRetrieveAwsSecret = jest.fn().mockReturnValue(mockSecretContent);
+
+    const result = generateCompose.resolveSecrets({
+      secretsMode: 'auto',
+      secretsAwsRegion: 'us-west-2',
+      secretsAwsSecret: 'auto-secret'
+    }, undefined, undefined, mockRetrieveAwsSecret);
+
+    expect(result.topLevel).toBeTruthy();
+    expect(Object.keys(result.topLevel)).toContain('config_json_aws');
+    expect(result.serviceRef).toEqual([{
+      source: 'config_json_aws',
+      target: 'config.json'
+    }]);
+
+    expect(mockRetrieveAwsSecret).toHaveBeenCalledWith('us-west-2', 'auto-secret');
+    
+    // Clean up temp file
+    const secretFile = result.topLevel.config_json_aws.file;
+    if (fs.existsSync(secretFile)) {
+      fs.unlinkSync(secretFile);
+    }
+  });
+
+  test('throws error when AWS command fails', () => {
+    const mockRetrieveAwsSecret = jest.fn().mockImplementation(() => {
+      throw new Error('Command failed: aws secretsmanager get-secret-value');
+    });
+
+    expect(() => {
+      generateCompose.resolveSecrets({
+        secretsMode: 'aws',
+        secretsAwsRegion: 'us-east-1',
+        secretsAwsSecret: 'fail-secret'
+      }, undefined, undefined, mockRetrieveAwsSecret);
+    }).toThrow('Failed to retrieve AWS secret: Command failed: aws secretsmanager get-secret-value');
+  });
+
+  test('parseArgs correctly handles Azure-related arguments', () => {
+    const argv = [
+      'node', 'script.js',
+      '--secrets-mode', 'azure',
+      '--secrets-azure-vault', 'my-vault',
+      '--secrets-azure-secret', 'my-secret',
+      '--secrets-target', 'credentials.json'
+    ];
+
+    const args = generateCompose.parseArgs(argv);
+    
+    expect(args.secretsMode).toBe('azure');
+    expect(args.secretsAzureVault).toBe('my-vault');
+    expect(args.secretsAzureSecret).toBe('my-secret');
+    expect(args.secretsTarget).toBe('credentials.json');
+  });
+
+  test('parseArgs correctly handles AWS-related arguments', () => {
+    const argv = [
+      'node', 'script.js',
+      '--secrets-mode', 'aws',
+      '--secrets-aws-region', 'eu-west-1',
+      '--secrets-aws-secret', 'my-secret',
+      '--secrets-target', 'credentials.json'
+    ];
+
+    const args = generateCompose.parseArgs(argv);
+    
+    expect(args.secretsMode).toBe('aws');
+    expect(args.secretsAwsRegion).toBe('eu-west-1');
+    expect(args.secretsAwsSecret).toBe('my-secret');
+    expect(args.secretsTarget).toBe('credentials.json');
+  });
+
+  test('parseArgs uses environment variables for Azure settings', () => {
+    const originalEnv = process.env;
+    process.env = {
+      ...originalEnv,
+      COMPOSE_SECRETS_MODE: 'azure',
+      COMPOSE_SECRETS_AZURE_VAULT: 'env-vault',
+      COMPOSE_SECRETS_AZURE_SECRET: 'env-secret'
+    };
+
+    try {
+      const args = generateCompose.parseArgs(['node', 'script.js']);
+      
+      expect(args.secretsMode).toBe('azure');
+      expect(args.secretsAzureVault).toBe('env-vault');
+      expect(args.secretsAzureSecret).toBe('env-secret');
+    } finally {
+      process.env = originalEnv;
+    }
+  });
+
+  test('parseArgs uses environment variables for AWS settings', () => {
+    const originalEnv = process.env;
+    process.env = {
+      ...originalEnv,
+      COMPOSE_SECRETS_MODE: 'aws',
+      COMPOSE_SECRETS_AWS_REGION: 'ap-southeast-1',
+      COMPOSE_SECRETS_AWS_SECRET: 'env-secret'
+    };
+
+    try {
+      const args = generateCompose.parseArgs(['node', 'script.js']);
+      
+      expect(args.secretsMode).toBe('aws');
+      expect(args.secretsAwsRegion).toBe('ap-southeast-1');
+      expect(args.secretsAwsSecret).toBe('env-secret');
     } finally {
       process.env = originalEnv;
     }

@@ -16,24 +16,32 @@
  *  -o, --out <file>        Output file path (omit for stdout)
  *  --print                 Print to stdout (same as omitting -o)
  *  --dry-run, -n           Show what would be done without writing files
- *  --secrets-mode <mode>   Secrets mode: file|external|gcp|none (default: auto)
+ *  --secrets-mode <mode>   Secrets mode: file|external|gcp|azure|aws|none (default: auto)
  *  --secrets-file <file>   File mode: path to secrets file (default: ./secrets.json)
  *  --secrets-external <name> External mode: external secret name
  *  --secrets-target <path> Target path in container (default: config.json)
  *  --secrets-gcp-project <project> GCP mode: Google Cloud project ID
  *  --secrets-gcp-secret <secret>   GCP mode: Secret Manager secret name
+ *  --secrets-azure-vault <vault>   Azure mode: Key Vault name
+ *  --secrets-azure-secret <secret> Azure mode: Secret name in Key Vault
+ *  --secrets-aws-region <region>   AWS mode: AWS region
+ *  --secrets-aws-secret <secret>   AWS mode: Secrets Manager secret name
  *
  * Environment overrides (container-config mode):
  *  - COMPOSE_BASE_IMAGE: Base image for Foundry services (default: felddy/foundryvtt)
  *  - COMPOSE_USER: User string for services (default: 0:0)
  *  - COMPOSE_BUILDER_ENABLED: When not '0', include builder service (default: enabled)
  *  - COMPOSE_BUILDER_IMAGE: Builder image (default: node:20-alpine)
- *  - COMPOSE_SECRETS_MODE: Secrets mode (file|external|gcp|none, default: auto)
+ *  - COMPOSE_SECRETS_MODE: Secrets mode (file|external|gcp|azure|aws|none, default: auto)
  *  - COMPOSE_SECRETS_FILE: Path to secrets file (default: ./secrets.json)
  *  - COMPOSE_SECRETS_EXTERNAL_NAME: External secret name
  *  - COMPOSE_SECRETS_TARGET: Target path in container (default: config.json)
  *  - COMPOSE_SECRETS_GCP_PROJECT: Google Cloud project ID for GCP mode
  *  - COMPOSE_SECRETS_GCP_SECRET: Secret Manager secret name for GCP mode
+ *  - COMPOSE_SECRETS_AZURE_VAULT: Key Vault name for Azure mode
+ *  - COMPOSE_SECRETS_AZURE_SECRET: Secret name in Key Vault for Azure mode
+ *  - COMPOSE_SECRETS_AWS_REGION: AWS region for AWS mode
+ *  - COMPOSE_SECRETS_AWS_SECRET: Secrets Manager secret name for AWS mode
  *
  * Defaults (container-config mode):
  *  - Service name: foundry-v<NN>, dir: v<NN>, port: 30000+<NN>
@@ -120,6 +128,10 @@ function parseArgs(argv) {
 		secretsTarget: process.env.COMPOSE_SECRETS_TARGET || 'config.json',
 		secretsGcpProject: process.env.COMPOSE_SECRETS_GCP_PROJECT || '',
 		secretsGcpSecret: process.env.COMPOSE_SECRETS_GCP_SECRET || '',
+		secretsAzureVault: process.env.COMPOSE_SECRETS_AZURE_VAULT || '',
+		secretsAzureSecret: process.env.COMPOSE_SECRETS_AZURE_SECRET || '',
+		secretsAwsRegion: process.env.COMPOSE_SECRETS_AWS_REGION || '',
+		secretsAwsSecret: process.env.COMPOSE_SECRETS_AWS_SECRET || '',
 	};
 	for (let i = 2; i < argv.length; i++) {
 		const a = argv[i];
@@ -143,12 +155,20 @@ function parseArgs(argv) {
 			args.secretsGcpProject = argv[++i];
 		} else if (a === '--secrets-gcp-secret' && argv[i + 1]) {
 			args.secretsGcpSecret = argv[++i];
+		} else if (a === '--secrets-azure-vault' && argv[i + 1]) {
+			args.secretsAzureVault = argv[++i];
+		} else if (a === '--secrets-azure-secret' && argv[i + 1]) {
+			args.secretsAzureSecret = argv[++i];
+		} else if (a === '--secrets-aws-region' && argv[i + 1]) {
+			args.secretsAwsRegion = argv[++i];
+		} else if (a === '--secrets-aws-secret' && argv[i + 1]) {
+			args.secretsAwsSecret = argv[++i];
 		}
 	}
 	return args;
 }
 
-function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret) {
+function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveAzureSecretFn = retrieveAzureSecret, retrieveAwsSecretFn = retrieveAwsSecret) {
 	const mode = (opts.secretsMode || 'auto').toLowerCase();
 
 	if (mode === 'none') {
@@ -165,7 +185,7 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret) {
 
 	if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
 		const secretName = 'config_json_gcp';
-		const gcpSecretFile = `/tmp/secrets-${Date.now()}.json`;
+		const gcpSecretFile = `/tmp/secrets-gcp-${Date.now()}.json`;
 		
 		// Create a temporary file with the GCP secret content
 		try {
@@ -181,6 +201,42 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret) {
 		};
 	}
 
+	if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
+		const secretName = 'config_json_azure';
+		const azureSecretFile = `/tmp/secrets-azure-${Date.now()}.json`;
+		
+		// Create a temporary file with the Azure secret content
+		try {
+			const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
+			require('fs').writeFileSync(azureSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: azureSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
+	if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
+		const secretName = 'config_json_aws';
+		const awsSecretFile = `/tmp/secrets-aws-${Date.now()}.json`;
+		
+		// Create a temporary file with the AWS secret content
+		try {
+			const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
+			require('fs').writeFileSync(awsSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: awsSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
 	return {
 		topLevel: { config_json: { file: opts.secretsFile || './secrets.json' } },
 		serviceRef: [ { source: 'config_json', target: opts.secretsTarget || 'config.json' } ],
@@ -191,6 +247,18 @@ function retrieveGcpSecret(project, secretName) {
 	const { execSync } = require('child_process');
 	const gcpCommand = `gcloud secrets versions access latest --secret="${secretName}" --project="${project}"`;
 	return execSync(gcpCommand, { encoding: 'utf8' });
+}
+
+function retrieveAzureSecret(vaultName, secretName) {
+	const { execSync } = require('child_process');
+	const azureCommand = `az keyvault secret show --vault-name "${vaultName}" --name "${secretName}" --query value --output tsv`;
+	return execSync(azureCommand, { encoding: 'utf8' });
+}
+
+function retrieveAwsSecret(region, secretName) {
+	const { execSync } = require('child_process');
+	const awsCommand = `aws secretsmanager get-secret-value --region "${region}" --secret-id "${secretName}" --query SecretString --output text`;
+	return execSync(awsCommand, { encoding: 'utf8' });
 }
 
 function toEnvList(envObjOrNumber) {
@@ -418,6 +486,8 @@ module.exports = {
 	parseArgs,
 	resolveSecrets,
 	retrieveGcpSecret,
+	retrieveAzureSecret,
+	retrieveAwsSecret,
 	buildComposeFromComposeConfig,
 	buildComposeFromContainerConfig,
 	main
