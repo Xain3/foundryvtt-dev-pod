@@ -487,20 +487,12 @@ module.exports = {
 	resolveTemplatedNumber,
 	buildComposeFromComposeConfig,
 	buildComposeFromContainerConfig,
+	retrieveGcpSecret,
+	retrieveAzureSecret,
+	retrieveAwsSecret,
 	main
 };
 
 if (require.main === module) {
 	try { main(); } catch (e) { console.error(e?.stack || String(e)); process.exit(1); }
 }
-
-module.exports = {
-	parseArgs,
-	resolveSecrets,
-	retrieveGcpSecret,
-	retrieveAzureSecret,
-	retrieveAwsSecret,
-	buildComposeFromComposeConfig,
-	buildComposeFromContainerConfig,
-	main
-};

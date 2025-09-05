@@ -813,6 +813,8 @@ describe('scripts/generate-compose.js', () => {
     } finally {
       process.env = originalEnv;
     }
+  });
+
   test('handles environment variable overrides', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
     const cfgPath = path.join(tmp, 'container-config.json');
