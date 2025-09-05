@@ -8,9 +8,9 @@ function runNode(args, opts = {}) {
   return childProcess.execSync(`node ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
 }
 
-describe('docker/scripts/generate-compose.js', () => {
+describe('scripts/generate-compose.js', () => {
   const repoRoot = path.resolve(__dirname, '../../..');
-  const scriptPath = path.join(repoRoot, 'docker/scripts/generate-compose.js');
+  const scriptPath = path.join(repoRoot, 'scripts/generate-compose.js');
 
   test('uses templated top-level version_params when no per-version overrides', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));

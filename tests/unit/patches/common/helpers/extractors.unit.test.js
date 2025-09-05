@@ -3,7 +3,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 
 // eslint-disable-next-line import/no-commonjs
-const extractors = require('../../../../../docker/patches/common/helpers/extractors.mjs');
+const extractors = require('../../../../../patches/common/helpers/extractors.mjs');
 const {
   extractTarBuffer,
   extractTar,
@@ -73,7 +73,7 @@ function buildTar(entries) {
   return Buffer.concat(chunks);
 }
 
-describe('docker/patches/common/helpers/extractors.mjs', () => {
+describe('patches/common/helpers/extractors.mjs', () => {
   const tmpRoot = path.join(process.cwd(), '.jest-tmp-extractors');
 
   beforeEach(() => {

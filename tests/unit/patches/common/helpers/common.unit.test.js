@@ -2,10 +2,10 @@ import path from 'node:path';
 import fs from 'node:fs';
 // After jest/babel config, we can require() the .mjs module
 // eslint-disable-next-line import/no-commonjs
-const loadNamed = async () => require('../../../../../docker/patches/common/helpers/common.mjs');
+const loadNamed = async () => require('../../../../../patches/common/helpers/common.mjs');
 const loadCommon = async () => loadNamed().then((m) => m.default || m);
 
-describe('docker/patches/common/helpers/common.mjs', () => {
+describe('patches/common/helpers/common.mjs', () => {
   let common;
   let named;
   const tmpRoot = path.join(process.cwd(), '.jest-tmp-common');

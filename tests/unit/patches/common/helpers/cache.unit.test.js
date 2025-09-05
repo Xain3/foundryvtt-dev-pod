@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 // Load the module using require after babel-jest transforms .mjs to CJS
 // eslint-disable-next-line import/no-commonjs
-const mod = require('../../../../../docker/patches/common/helpers/cache.mjs');
+const mod = require('../../../../../patches/common/helpers/cache.mjs');
 const {
   sha256File,
   fetchWithRetry,
@@ -13,7 +13,7 @@ const {
   CacheManager
 } = mod;
 
-describe('docker/patches/common/helpers/cache.mjs', () => {
+describe('patches/common/helpers/cache.mjs', () => {
   const tmpRoot = path.join(process.cwd(), '.jest-tmp-cache');
   const cacheDir = path.join(tmpRoot, 'cache');
   let server;

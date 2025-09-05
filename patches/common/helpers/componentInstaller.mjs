@@ -163,7 +163,7 @@ export class ComponentInstaller {
     }
     // Flatten, filter strings, prefer likely archives
     const urls = candidates.filter((u) => typeof u === 'string' && u.length > 0);
-    const archiveUrl = urls.find((u) => /\.(zip|tgz|tar(\.(gz|bz2|xz))?)$/i.test(u));
+    const archiveUrl = urls.find((u) => /(\.zip|tgz|tar(\.(gz|bz2|xz))?)$/i.test(u));
     return archiveUrl || urls[0];
   }
 

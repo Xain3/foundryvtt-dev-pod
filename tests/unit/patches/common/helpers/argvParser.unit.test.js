@@ -1,4 +1,4 @@
-import { parsePatchArgs } from '../../../../../docker/patches/common/helpers/argvParser.mjs';
+import { parsePatchArgs } from '../../../../../patches/common/helpers/argvParser.mjs';
 
 describe('parsePatchArgs', () => {
   const originalArgv = process.argv;

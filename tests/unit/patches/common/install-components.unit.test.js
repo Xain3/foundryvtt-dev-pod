@@ -11,7 +11,7 @@ import { spawnSync } from 'node:child_process';
 
 function runScriptWithStub({ cfg, dataDir }) {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-patch-'));
-  const tmpCommonDir = path.join(tmpRoot, 'docker/patches/common');
+  const tmpCommonDir = path.join(tmpRoot, 'patches/common');
   const tmpHelpersDir = path.join(tmpCommonDir, 'helpers');
   fs.mkdirSync(tmpHelpersDir, { recursive: true });
 
@@ -30,7 +30,7 @@ function runScriptWithStub({ cfg, dataDir }) {
   fs.writeFileSync(path.join(tmpHelpersDir, 'argvParser.mjs'), argvParserStub);
 
   // Copy the real script into the temp sandbox
-  const realScriptPath = path.resolve(process.cwd(), 'docker/patches/common/install-components.mjs');
+  const realScriptPath = path.resolve(process.cwd(), 'patches/common/install-components.mjs');
   const scriptContent = fs.readFileSync(realScriptPath, 'utf8');
   const sandboxScriptPath = path.join(tmpCommonDir, 'install-components.mjs');
   fs.writeFileSync(sandboxScriptPath, scriptContent);
