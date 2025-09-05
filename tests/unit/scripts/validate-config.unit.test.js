@@ -1,8 +1,8 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const childProcess = require('child_process');
-const { validateConfig, validateConfigWithCache, calculateFileHash } = require('../../../scripts/validate-config.js');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import childProcess from 'node:child_process';
+import { validateConfig, validateConfigWithCache, calculateFileHash } from '../../../scripts/validate-config.js';
 
 function runNode(args, opts = {}) {
   try {

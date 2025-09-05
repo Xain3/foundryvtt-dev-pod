@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * Container configuration schema validation utility.
+ * @file validate-config.js
+ * @description Container configuration schema validation utility
+ * @path scripts/validate-config.js
  */
 
-const fs = require('fs');
-const path = require('path');
-const { ConfigValidator, validateConfigWithCache: classValidateWithCache, calculateFileHash } = require('../helpers/config-validator');
+import path from 'node:path';
+import { ConfigValidator, validateConfigWithCache as classValidateWithCache, calculateFileHash } from '../helpers/config-validator.js';
 
 /**
  * Validate a container configuration file against basic structural requirements.
@@ -89,13 +90,13 @@ function showHelpMessage(args) {
 }
 
 // CLI interface
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
 
   runConfigValidation(args);
 }
 
-module.exports = {
+export {
   validateConfig,
   validateConfigWithCache,
   calculateFileHash,

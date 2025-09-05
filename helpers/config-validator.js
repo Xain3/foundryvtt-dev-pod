@@ -1,6 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const Ajv = require('ajv');
+/**
+ * @file config-validator.js
+ * @description Container configuration validation with caching support
+ * @path helpers/config-validator.js
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import Ajv from 'ajv';
 
 class ConfigValidator {
   constructor(options = {}) {
@@ -156,4 +162,4 @@ function validateConfigWithCache(configPath, schemaPath, cacheDir, validator = n
   return { ...result, cached: false };
 }
 
-module.exports = { ConfigValidator, validateConfigWithCache, calculateFileHash };
+export { ConfigValidator, validateConfigWithCache, calculateFileHash };

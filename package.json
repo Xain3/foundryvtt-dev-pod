@@ -3,7 +3,15 @@
   "version": "0.1.0",
   "description": "CLI tools to generate Docker Compose and manage dev pods for Foundry VTT (multi-version dev)",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./helpers/config-validator.js"
+    },
+    "./helpers/config-validator": "./helpers/config-validator.js",
+    "./scripts/generate-compose": "./scripts/generate-compose.js",
+    "./scripts/validate-config": "./scripts/validate-config.js"
+  },
   "bin": {
     "fvtt-compose-gen": "scripts/generate-compose.js",
     "fvtt-pod": "scripts/pod-handler.sh"
@@ -11,6 +19,8 @@
   "files": [
     "scripts/generate-compose.js",
     "scripts/pod-handler.sh",
+    "scripts/validate-config.js",
+    "helpers/",
     "patches/",
     "README.md",
     "LICENSE"

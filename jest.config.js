@@ -1,8 +1,9 @@
-module.exports = {
+export default {
   testEnvironment: 'node',
+  extensionsToTreatAsEsm: ['.js'],
   transform: {
-    // Use babel-jest to allow requiring .mjs ESM helper modules in tests via CommonJS require.
-    '^.+\\.m?js$': require.resolve('babel-jest')
+    // Only transform .mjs files with babel for legacy compatibility
+    '^.+\\.mjs$': ['babel-jest', { configFile: './babel.config.cjs' }]
   },
   moduleFileExtensions: ['js', 'mjs', 'json', 'node'],
   testPathIgnorePatterns: ['/node_modules/'],
