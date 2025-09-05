@@ -335,18 +335,17 @@ function main() {
 	}
 	const yml = yaml.dump(compose, { noRefs: true, lineWidth: 120 });
 
-	if (dryRun) {
-		console.log('[dry-run] Would generate compose YAML from config:', absConf);
-		if (out) {
-			const absOut = path.resolve(out);
-			console.log(`[dry-run] Would write to: ${absOut}`);
-		} else {
-			console.log('[dry-run] Would write to: stdout');
+		if (dryRun) {
+			console.log('[dry-run] Would generate compose YAML from config:', absConf);
+			if (out) {
+				const absOut = path.resolve(out);
+				console.log(`[dry-run] Would write to: ${absOut}`);
+			} else {
+				console.log('[dry-run] Would write to: stdout');
+			}
+			console.log(`[dry-run] Generated YAML size: ${yml.length} characters`);
+			return;
 		}
-		console.log(`[dry-run] Generated YAML size: ${yml.length} characters`);
-		return;
-	}
-
 	if (out) {
 		const absOut = path.resolve(out);
 		fs.writeFileSync(absOut, yml, 'utf8');
