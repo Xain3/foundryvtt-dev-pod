@@ -104,7 +104,6 @@ function showHelpMessage(args) {
   }
   return false;
 }
-}
 
 export {
   validateConfig,
