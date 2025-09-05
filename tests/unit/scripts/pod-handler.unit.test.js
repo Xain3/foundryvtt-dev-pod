@@ -1,7 +1,10 @@
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { runBashScript } = require('../../utils/shell.js');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { runBashScript } from '../../utils/shell.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('scripts/pod-handler.sh', () => {
   const repoRoot = path.resolve(__dirname, '../../..');

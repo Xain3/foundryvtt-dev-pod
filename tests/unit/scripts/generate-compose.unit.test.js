@@ -1,11 +1,15 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import childProcess from 'node:child_process';
 import yaml from 'js-yaml';
+import { jest } from '@jest/globals';
 
 // Import the module for unit testing individual functions
 import * as generateCompose from '../../../scripts/generate-compose.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function runNode(args, opts = {}) {
   return childProcess.execSync(`node ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });

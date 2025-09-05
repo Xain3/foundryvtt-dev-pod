@@ -56,7 +56,19 @@ const baseRules = {
 
 module.exports = [
   {
-    files: ['**/*.js', '**/*.cjs'],
+    files: ['**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        ...globals.node
+      }
+    },
+    linterOptions: { reportUnusedDisableDirectives: true },
+    rules: baseRules
+  },
+  {
+    files: ['**/*.cjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',

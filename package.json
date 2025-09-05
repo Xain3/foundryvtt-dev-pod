@@ -41,8 +41,8 @@
   },
   "scripts": {
     "lint": "eslint scripts patches --ext .js,.mjs",
-    "test": "npm run lint && jest",
-    "test:ci": "npm run lint && jest --coverage",
+    "test": "npm run lint && node --experimental-vm-modules ./node_modules/.bin/jest",
+    "test:ci": "npm run lint && node --experimental-vm-modules ./node_modules/.bin/jest --coverage",
     "check-coverage": "node .github/scripts/check-coverage.js"
   }
 }

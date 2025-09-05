@@ -1,5 +1,11 @@
-const childProcess = require('node:child_process');
-const path = require('node:path');
+/**
+ * @file shell.js
+ * @description Shell script testing utilities
+ * @path tests/utils/shell.js
+ */
+
+import childProcess from 'node:child_process';
+import path from 'node:path';
 
 function runBashScript(script, args = [], opts = {}) {
   const cwd = opts.cwd || process.cwd();
@@ -8,4 +14,4 @@ function runBashScript(script, args = [], opts = {}) {
   return { code: res.status, stdout: res.stdout || '', stderr: res.stderr || '' };
 }
 
-module.exports = { runBashScript };
+export { runBashScript };
