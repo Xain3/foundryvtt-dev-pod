@@ -168,6 +168,15 @@ function parseArgs(argv) {
 	return args;
 }
 
+let __secretTempCounter = 0;
+function nextTempId() {
+	const now = Date.now();
+	// Increment counter to avoid collisions when called multiple times within the same ms
+	__secretTempCounter = (__secretTempCounter + 1) & 0xffff; // keep it bounded
+	// Only digits to satisfy existing test regex expectations
+	return `${now}${__secretTempCounter}`;
+}
+
 function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveAzureSecretFn = retrieveAzureSecret, retrieveAwsSecretFn = retrieveAwsSecret) {
 	const mode = (opts.secretsMode || 'auto').toLowerCase();
 
@@ -185,8 +194,8 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 
 	if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
 		const secretName = 'config_json_gcp';
-		const gcpSecretFile = `/tmp/secrets-gcp-${Date.now()}.json`;
-		
+		const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
+
 		// Create a temporary file with the GCP secret content
 		try {
 			const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
@@ -203,8 +212,8 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 
 	if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
 		const secretName = 'config_json_azure';
-		const azureSecretFile = `/tmp/secrets-azure-${Date.now()}.json`;
-		
+		const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
+
 		// Create a temporary file with the Azure secret content
 		try {
 			const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
@@ -221,8 +230,8 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 
 	if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
 		const secretName = 'config_json_aws';
-		const awsSecretFile = `/tmp/secrets-aws-${Date.now()}.json`;
-		
+		const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
+
 		// Create a temporary file with the AWS secret content
 		try {
 			const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
