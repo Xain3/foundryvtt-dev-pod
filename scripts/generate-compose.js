@@ -116,6 +116,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
 const { validateConfig } = require('./validate-config.js');
+const { defaultProviders } = require('./secretsProviders.js');
 
 function parseArgs(argv) {
 	const args = {
@@ -168,7 +169,7 @@ function parseArgs(argv) {
 	return args;
 }
 
-function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveAzureSecretFn = retrieveAzureSecret, retrieveAwsSecretFn = retrieveAwsSecret) {
+function resolveSecrets(opts, providers = defaultProviders) {
 	const mode = (opts.secretsMode || 'auto').toLowerCase();
 
 	if (mode === 'none') {
@@ -189,7 +190,7 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 		
 		// Create a temporary file with the GCP secret content
 		try {
-			const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
+			const secretContent = providers.getGcpSecret(opts.secretsGcpProject, opts.secretsGcpSecret);
 			require('fs').writeFileSync(gcpSecretFile, secretContent, 'utf8');
 		} catch (error) {
 			throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
@@ -207,7 +208,7 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 		
 		// Create a temporary file with the Azure secret content
 		try {
-			const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
+			const secretContent = providers.getAzureSecret(opts.secretsAzureVault, opts.secretsAzureSecret);
 			require('fs').writeFileSync(azureSecretFile, secretContent, 'utf8');
 		} catch (error) {
 			throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
@@ -225,7 +226,7 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 		
 		// Create a temporary file with the AWS secret content
 		try {
-			const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
+			const secretContent = providers.getAwsSecret(opts.secretsAwsRegion, opts.secretsAwsSecret);
 			require('fs').writeFileSync(awsSecretFile, secretContent, 'utf8');
 		} catch (error) {
 			throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
@@ -243,23 +244,6 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 	};
 }
 
-function retrieveGcpSecret(project, secretName) {
-	const { execSync } = require('child_process');
-	const gcpCommand = `gcloud secrets versions access latest --secret="${secretName}" --project="${project}"`;
-	return execSync(gcpCommand, { encoding: 'utf8' });
-}
-
-function retrieveAzureSecret(vaultName, secretName) {
-	const { execSync } = require('child_process');
-	const azureCommand = `az keyvault secret show --vault-name "${vaultName}" --name "${secretName}" --query value --output tsv`;
-	return execSync(azureCommand, { encoding: 'utf8' });
-}
-
-function retrieveAwsSecret(region, secretName) {
-	const { execSync } = require('child_process');
-	const awsCommand = `aws secretsmanager get-secret-value --region "${region}" --secret-id "${secretName}" --query SecretString --output text`;
-	return execSync(awsCommand, { encoding: 'utf8' });
-}
 
 function toEnvList(envObjOrNumber) {
 	if (envObjOrNumber && typeof envObjOrNumber === 'object' && !Array.isArray(envObjOrNumber)) {
@@ -487,9 +471,6 @@ module.exports = {
 	resolveTemplatedNumber,
 	buildComposeFromComposeConfig,
 	buildComposeFromContainerConfig,
-	retrieveGcpSecret,
-	retrieveAzureSecret,
-	retrieveAwsSecret,
 	main
 };
 

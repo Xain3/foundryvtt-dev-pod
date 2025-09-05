@@ -487,14 +487,16 @@ describe('scripts/generate-compose.js', () => {
 
   test('supports GCP secrets mode with project and secret name', () => {
     const mockSecretContent = '{"foundry_license": "test-license", "foundry_password": "test-password"}';
-    const mockRetrieveGcpSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const mockProviders = {
+      getGcpSecret: jest.fn().mockReturnValue(mockSecretContent)
+    };
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'gcp',
       secretsGcpProject: 'test-project',
       secretsGcpSecret: 'test-secret',
       secretsTarget: 'config.json'
-    }, mockRetrieveGcpSecret);
+    }, mockProviders);
 
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_gcp');
@@ -507,7 +509,7 @@ describe('scripts/generate-compose.js', () => {
     }]);
 
     // Verify the GCP function was called correctly
-    expect(mockRetrieveGcpSecret).toHaveBeenCalledWith('test-project', 'test-secret');
+    expect(mockProviders.getGcpSecret).toHaveBeenCalledWith('test-project', 'test-secret');
 
     // Verify the secret content was written to the file
     const secretFile = result.topLevel.config_json_gcp.file;
@@ -520,13 +522,15 @@ describe('scripts/generate-compose.js', () => {
 
   test('auto-detects GCP mode when project and secret are provided', () => {
     const mockSecretContent = '{"foundry_license": "test-license"}';
-    const mockRetrieveGcpSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const mockProviders = {
+      getGcpSecret: jest.fn().mockReturnValue(mockSecretContent)
+    };
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'auto',
       secretsGcpProject: 'auto-project',
       secretsGcpSecret: 'auto-secret'
-    }, mockRetrieveGcpSecret);
+    }, mockProviders);
 
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_gcp');
@@ -535,7 +539,7 @@ describe('scripts/generate-compose.js', () => {
       target: 'config.json'
     }]);
 
-    expect(mockRetrieveGcpSecret).toHaveBeenCalledWith('auto-project', 'auto-secret');
+    expect(mockProviders.getGcpSecret).toHaveBeenCalledWith('auto-project', 'auto-secret');
 
     // Clean up temp file
     const secretFile = result.topLevel.config_json_gcp.file;
@@ -545,16 +549,18 @@ describe('scripts/generate-compose.js', () => {
   });
 
   test('throws error when GCP command fails', () => {
-    const mockRetrieveGcpSecret = jest.fn().mockImplementation(() => {
-      throw new Error('Command failed: gcloud secrets versions access');
-    });
+    const mockProviders = {
+      getGcpSecret: jest.fn().mockImplementation(() => {
+        throw new Error('Command failed: gcloud secrets versions access');
+      })
+    };
 
     expect(() => {
       generateCompose.resolveSecrets({
         secretsMode: 'gcp',
         secretsGcpProject: 'fail-project',
         secretsGcpSecret: 'fail-secret'
-      }, mockRetrieveGcpSecret);
+      }, mockProviders);
     }).toThrow('Failed to retrieve GCP secret: Command failed: gcloud secrets versions access');
   });
 
@@ -597,14 +603,16 @@ describe('scripts/generate-compose.js', () => {
 
   test('supports Azure secrets mode with vault and secret name', () => {
     const mockSecretContent = '{"foundry_license": "azure-license", "foundry_password": "azure-password"}';
-    const mockRetrieveAzureSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const mockProviders = {
+      getAzureSecret: jest.fn().mockReturnValue(mockSecretContent)
+    };
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'azure',
       secretsAzureVault: 'test-vault',
       secretsAzureSecret: 'test-secret',
       secretsTarget: 'config.json'
-    }, undefined, mockRetrieveAzureSecret);
+    }, mockProviders);
 
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_azure');
@@ -617,7 +625,7 @@ describe('scripts/generate-compose.js', () => {
     }]);
 
     // Verify the Azure function was called correctly
-    expect(mockRetrieveAzureSecret).toHaveBeenCalledWith('test-vault', 'test-secret');
+    expect(mockProviders.getAzureSecret).toHaveBeenCalledWith('test-vault', 'test-secret');
 
     // Verify the secret content was written to the file
     const secretFile = result.topLevel.config_json_azure.file;
@@ -630,13 +638,15 @@ describe('scripts/generate-compose.js', () => {
 
   test('auto-detects Azure mode when vault and secret are provided', () => {
     const mockSecretContent = '{"foundry_license": "azure-auto-license"}';
-    const mockRetrieveAzureSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const mockProviders = {
+      getAzureSecret: jest.fn().mockReturnValue(mockSecretContent)
+    };
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'auto',
       secretsAzureVault: 'auto-vault',
       secretsAzureSecret: 'auto-secret'
-    }, undefined, mockRetrieveAzureSecret);
+    }, mockProviders);
 
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_azure');
@@ -645,7 +655,7 @@ describe('scripts/generate-compose.js', () => {
       target: 'config.json'
     }]);
 
-    expect(mockRetrieveAzureSecret).toHaveBeenCalledWith('auto-vault', 'auto-secret');
+    expect(mockProviders.getAzureSecret).toHaveBeenCalledWith('auto-vault', 'auto-secret');
 
     // Clean up temp file
     const secretFile = result.topLevel.config_json_azure.file;
@@ -655,29 +665,33 @@ describe('scripts/generate-compose.js', () => {
   });
 
   test('throws error when Azure command fails', () => {
-    const mockRetrieveAzureSecret = jest.fn().mockImplementation(() => {
-      throw new Error('Command failed: az keyvault secret show');
-    });
+    const mockProviders = {
+      getAzureSecret: jest.fn().mockImplementation(() => {
+        throw new Error('Command failed: az keyvault secret show');
+      })
+    };
 
     expect(() => {
       generateCompose.resolveSecrets({
         secretsMode: 'azure',
         secretsAzureVault: 'fail-vault',
         secretsAzureSecret: 'fail-secret'
-      }, undefined, mockRetrieveAzureSecret);
+      }, mockProviders);
     }).toThrow('Failed to retrieve Azure secret: Command failed: az keyvault secret show');
   });
 
   test('supports AWS secrets mode with region and secret name', () => {
     const mockSecretContent = '{"foundry_license": "aws-license", "foundry_password": "aws-password"}';
-    const mockRetrieveAwsSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const mockProviders = {
+      getAwsSecret: jest.fn().mockReturnValue(mockSecretContent)
+    };
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'aws',
       secretsAwsRegion: 'us-east-1',
       secretsAwsSecret: 'test-secret',
       secretsTarget: 'config.json'
-    }, undefined, undefined, mockRetrieveAwsSecret);
+    }, mockProviders);
 
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_aws');
@@ -690,7 +704,7 @@ describe('scripts/generate-compose.js', () => {
     }]);
 
     // Verify the AWS function was called correctly
-    expect(mockRetrieveAwsSecret).toHaveBeenCalledWith('us-east-1', 'test-secret');
+    expect(mockProviders.getAwsSecret).toHaveBeenCalledWith('us-east-1', 'test-secret');
 
     // Verify the secret content was written to the file
     const secretFile = result.topLevel.config_json_aws.file;
@@ -703,13 +717,15 @@ describe('scripts/generate-compose.js', () => {
 
   test('auto-detects AWS mode when region and secret are provided', () => {
     const mockSecretContent = '{"foundry_license": "aws-auto-license"}';
-    const mockRetrieveAwsSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const mockProviders = {
+      getAwsSecret: jest.fn().mockReturnValue(mockSecretContent)
+    };
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'auto',
       secretsAwsRegion: 'us-west-2',
       secretsAwsSecret: 'auto-secret'
-    }, undefined, undefined, mockRetrieveAwsSecret);
+    }, mockProviders);
 
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_aws');
@@ -718,7 +734,7 @@ describe('scripts/generate-compose.js', () => {
       target: 'config.json'
     }]);
 
-    expect(mockRetrieveAwsSecret).toHaveBeenCalledWith('us-west-2', 'auto-secret');
+    expect(mockProviders.getAwsSecret).toHaveBeenCalledWith('us-west-2', 'auto-secret');
 
     // Clean up temp file
     const secretFile = result.topLevel.config_json_aws.file;
@@ -728,16 +744,18 @@ describe('scripts/generate-compose.js', () => {
   });
 
   test('throws error when AWS command fails', () => {
-    const mockRetrieveAwsSecret = jest.fn().mockImplementation(() => {
-      throw new Error('Command failed: aws secretsmanager get-secret-value');
-    });
+    const mockProviders = {
+      getAwsSecret: jest.fn().mockImplementation(() => {
+        throw new Error('Command failed: aws secretsmanager get-secret-value');
+      })
+    };
 
     expect(() => {
       generateCompose.resolveSecrets({
         secretsMode: 'aws',
         secretsAwsRegion: 'us-east-1',
         secretsAwsSecret: 'fail-secret'
-      }, undefined, undefined, mockRetrieveAwsSecret);
+      }, mockProviders);
     }).toThrow('Failed to retrieve AWS secret: Command failed: aws secretsmanager get-secret-value');
   });
 
