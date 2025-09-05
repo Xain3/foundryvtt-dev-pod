@@ -44,6 +44,6 @@
     "lint": "eslint scripts patches --ext .js,.mjs",
     "test": "npm run lint && node --experimental-vm-modules ./node_modules/.bin/jest",
     "test:ci": "npm run lint && node --experimental-vm-modules ./node_modules/.bin/jest --coverage",
-    "check-coverage": "node .github/scripts/check-coverage.js"
+    "check-coverage": "node .github/scripts/check-coverage.cjs"
   }
 }
