@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,14 +19,12 @@ function runScript(scriptPath, args = [], env = {}) {
 
 describe('wrapper scripts dry-run', () => {
   // Entry-point wrappers live in ../entrypoint, while .mjs files live in this common dir
-  const baseDir = __dirname;
   // Tests run from tests/unit/patches/entrypoint; wrappers live in
   // patches/entrypoint at repository root
   const wrapperDir = path.join(__dirname, '..', '..', '..', '..', 'patches', 'entrypoint');
 
   describe('00-use-cache-or-stagger.sh', () => {
   const script = path.join(wrapperDir, '00-use-cache-or-stagger.sh');
-  const expectedTarget = path.join(baseDir, 'use-cache-or-stagger.mjs');
   const expectedViaWrapperAbs = path.normalize(path.join(wrapperDir, '..', 'common', 'use-cache-or-stagger.mjs'));
 
     test('prints correct dry-run command (via PATCH_DRY_RUN)', () => {
@@ -39,10 +38,8 @@ describe('wrapper scripts dry-run', () => {
     });
 
     test('target .mjs file exists', () => {
-      // verify the target .mjs file exists
-  const fs = require('node:fs');
-  const exists = fs.existsSync(expectedViaWrapperAbs);
-  expect(exists).toBe(true);
+      const exists = fs.existsSync(expectedViaWrapperAbs);
+      expect(exists).toBe(true);
     });
 
     test('prints help with -h/--help', () => {
@@ -59,7 +56,6 @@ describe('wrapper scripts dry-run', () => {
 
   describe('10-sync-host-content.sh', () => {
   const script = path.join(wrapperDir, '10-sync-host-content.sh');
-  const expectedTarget = path.join(baseDir, 'sync-host-content.mjs');
   const expectedViaWrapperAbs = path.normalize(path.join(wrapperDir, '..', 'common', 'sync-host-content.mjs'));
 
     test('prints correct dry-run command (via DRY_RUN)', () => {
@@ -74,10 +70,8 @@ describe('wrapper scripts dry-run', () => {
     });
 
     test('target .mjs file exists', () => {
-      // verify the target .mjs file exists
-  const fs = require('node:fs');
-  const exists = fs.existsSync(expectedViaWrapperAbs);
-  expect(exists).toBe(true);
+      const exists = fs.existsSync(expectedViaWrapperAbs);
+      expect(exists).toBe(true);
     });
 
     test('prints help with -h/--help', () => {
@@ -90,7 +84,6 @@ describe('wrapper scripts dry-run', () => {
 
   describe('20-install-components.sh', () => {
   const script = path.join(wrapperDir, '20-install-components.sh');
-  const expectedTarget = path.join(baseDir, 'install-components.mjs');
   const expectedViaWrapperAbs = path.normalize(path.join(wrapperDir, '..', 'common', 'install-components.mjs'));
 
     test('prints correct dry-run command (via --dry-run flag)', () => {
@@ -104,10 +97,8 @@ describe('wrapper scripts dry-run', () => {
     });
 
     test('target .mjs file exists', () => {
-      // verify the target .mjs file exists
-  const fs = require('node:fs');
-  const exists = fs.existsSync(expectedViaWrapperAbs);
-  expect(exists).toBe(true);
+      const exists = fs.existsSync(expectedViaWrapperAbs);
+      expect(exists).toBe(true);
     });
 
     test('prints help with -h/--help', () => {
