@@ -4,7 +4,7 @@ const fs = require('node:fs');
 
 // __dirname is .../tests/unit/patches; go up 3 levels to reach repo root
 const repoRoot = path.resolve(__dirname, '../../..');
-const commonDir = path.join(repoRoot, 'docker', 'patches', 'common');
+const commonDir = path.join(repoRoot, 'patches', 'common');
 
 function runBash(script, args = [], env = {}) {
   const cmd = 'bash';
@@ -19,7 +19,7 @@ function runBash(script, args = [], env = {}) {
 
 // Helper to create a transient thin wrapper to exercise wrapper-bin/wrapper-lib
 function makeTempWrapper(filename, contents) {
-  const dirPath = path.join(repoRoot, 'docker', 'patches', 'entrypoint');
+  const dirPath = path.join(repoRoot, 'patches', 'entrypoint');
   fs.mkdirSync(dirPath, { recursive: true });
   const filePath = path.join(dirPath, filename);
   fs.writeFileSync(filePath, contents, { encoding: 'utf8', mode: 0o755 });

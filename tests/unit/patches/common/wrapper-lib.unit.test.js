@@ -3,8 +3,8 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const repoRoot = path.resolve(__dirname, '../../../../');
-const commonDir = path.join(repoRoot, 'docker', 'patches', 'common');
-const entrypointDir = path.join(repoRoot, 'docker', 'patches', 'entrypoint');
+const commonDir = path.join(repoRoot, 'patches', 'common');
+const entrypointDir = path.join(repoRoot, 'patches', 'entrypoint');
 
 function runBash(script, args = [], env = {}) {
   const cmd = 'bash';

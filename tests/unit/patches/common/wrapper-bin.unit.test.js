@@ -6,8 +6,8 @@ jest.setTimeout(20000);
 // __dirname is .../tests/unit/patches/common; go up 4 levels to repo root
 const rootDir = path.resolve(__dirname, '../../../../');
 
-const entryDir = path.resolve(rootDir, 'docker/patches/entrypoint');
-const commonDir = path.resolve(rootDir, 'docker/patches/common');
+const entryDir = path.resolve(rootDir, 'patches/entrypoint');
+const commonDir = path.resolve(rootDir, 'patches/common');
 
 const scriptSync = path.join(entryDir, '10-sync-host-content.sh');
 const scriptUseCache = path.join(entryDir, '00-use-cache-or-stagger.sh');

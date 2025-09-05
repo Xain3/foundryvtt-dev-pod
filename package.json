@@ -5,13 +5,13 @@
   "license": "MIT",
   "type": "commonjs",
   "bin": {
-    "fvtt-compose-gen": "docker/scripts/generate-compose.js",
-    "fvtt-pod": "docker/scripts/pod-handler.sh"
+    "fvtt-compose-gen": "scripts/generate-compose.js",
+    "fvtt-pod": "scripts/pod-handler.sh"
   },
   "files": [
-    "docker/scripts/generate-compose.js",
-    "docker/scripts/pod-handler.sh",
-    "docker/patches/",
+    "scripts/generate-compose.js",
+    "scripts/pod-handler.sh",
+    "patches/",
     "README.md",
     "LICENSE"
   ],

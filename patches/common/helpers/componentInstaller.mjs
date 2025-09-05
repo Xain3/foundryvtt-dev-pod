@@ -163,7 +163,7 @@ export class ComponentInstaller {
     }
     // Flatten, filter strings, prefer likely archives
     const urls = candidates.filter((u) => typeof u === 'string' && u.length > 0);
-    const archiveUrl = urls.find((u) => /\.(zip|tgz|tar(\.(gz|bz2|xz))?)$/i.test(u));
+    const archiveUrl = urls.find((u) => /(\.zip|tgz|tar(\.(gz|bz2|xz))?)$/i.test(u));
     return archiveUrl || urls[0];
   }
 
@@ -713,24 +713,24 @@ export class ComponentInstaller {
 
     try {
       const entries = fs.readdirSync(targetDir, { withFileTypes: true });
-
+      
       for (const entry of entries) {
         if (!entry.isDirectory()) {
           continue; // Skip files, only process directories
         }
-
+        
         const componentId = entry.name;
-
+        
         // Special case: preserve "test-world" even if not in config
         if (type === "world" && componentId === "test-world" && !this.disableTestWorldException) {
           console.log(`[patch] Preserving test-world (exception for testing)`);
           continue;
         }
-
+        
         // Check if this component is in the allowed list
         if (!allowedIds.includes(componentId)) {
           const componentPath = path.join(targetDir, componentId);
-
+          
           if (this.dryRun) {
             console.log(`[patch] (dry-run) Would purge unlisted ${type}: ${componentId}`);
             purged.push(componentId);
@@ -745,7 +745,7 @@ export class ComponentInstaller {
           }
         }
       }
-
+      
       if (purged.length > 0) {
         console.log(`[patch] Purged ${type}s: ${purged.join(", ")}`);
       } else {

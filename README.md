@@ -7,7 +7,7 @@ Minimal CLI for working with local multi-version Foundry containers during modul
 - Generate compose from `container-config.json`:
 
 ```zsh
-npx fvtt-compose-gen -c docker/container-config.json -o docker/compose.dev.yml
+npx fvtt-compose-gen -c container-config.json -o compose.dev.yml
 ```
 
 - Start services and tail logs:
@@ -35,17 +35,17 @@ Flags or env vars:
 
 ## Pod helper
 
-- Default compose file path: `docker/compose.dev.yml` (from repo root)
+- Default compose file path: `compose.dev.yml` (from repo root)
 - Custom compose file:
 
 ```zsh
-npx fvtt-pod -f ./docker/compose.dev.nonroot.yml up -d
+npx fvtt-pod -f ./compose.dev.nonroot.yml up -d
 ```
 
 ## Safety
 
 - This package is marked `private: true` in `package.json`. Remove that, set a unique name, add a license, then `npm publish --access public` if you choose to publish.
-- Review `docker/README.md` for full details.
+- Review `patches/README.md` for patch details.
 
 ## Acknowledgments
 

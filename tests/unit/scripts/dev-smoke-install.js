@@ -78,7 +78,7 @@ export async function smokeInstall(inputArgs = {}, inputEnv = {}) {
   // Run installer in a child Node process to handle ESM cleanly under Jest
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-smoke-'));
   const harness = path.join(tmpRoot, 'smoke-harness.mjs');
-  const helperAbs = path.resolve(process.cwd(), 'docker/patches/common/helpers/componentInstaller.mjs');
+  const helperAbs = path.resolve(process.cwd(), 'patches/common/helpers/componentInstaller.mjs');
   const helperUrl = pathToFileURL(helperAbs).toString();
   const code = `import { ComponentInstaller } from '${helperUrl}';\n` +
     `const ENV = process.env;\n` +

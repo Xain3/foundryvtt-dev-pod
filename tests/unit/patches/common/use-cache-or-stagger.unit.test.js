@@ -11,7 +11,7 @@ function runNode(file, env = {}) {
 }
 
 describe('use-cache-or-stagger.mjs', () => {
-  const scriptPath = path.resolve(__dirname, '../../../../docker/patches/common/use-cache-or-stagger.mjs');
+  const scriptPath = path.resolve(__dirname, '../../../../patches/common/use-cache-or-stagger.mjs');
 
   test('uses latest cached zip and sets FOUNDRY_RELEASE_URL', () => {
     const cacheDir = tmpDir();

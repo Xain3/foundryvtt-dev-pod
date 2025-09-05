@@ -7,8 +7,8 @@ import { pathToFileURL } from 'node:url';
 function runBuilder(cfg, options) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-sync-'));
   const harness = path.join(tmp, 'harness.mjs');
-  // Resolve from the project root (current working directory) into docker/patches/common
-  const targetAbs = path.resolve(process.cwd(), 'docker/patches/common/sync-host-content.mjs');
+  // Resolve from the project root (current working directory) into patches/common
+  const targetAbs = path.resolve(process.cwd(), 'patches/common/sync-host-content.mjs');
   const code = `import { buildConfigSyncTasksFrom } from '${pathToFileURL(targetAbs).toString()}';\n` +
     `const cfg = JSON.parse(process.env.CFG);\n` +
     `const opt = JSON.parse(process.env.OPT || '{}');\n` +
