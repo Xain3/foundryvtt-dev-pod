@@ -70,6 +70,7 @@ Examples:
 ### Adding a new wrapper
 
 1. **Start with the template**: Copy `common/XX-patch-entrypoint.sh.template` to `entrypoint/[NN-]my-patch.sh`:
+
    ```bash
    cp patches/common/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
    ```
@@ -84,6 +85,7 @@ Examples:
    - Any additional arguments passed through the wrapper
 
 **Minimal wrapper example** (if not using template):
+
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
@@ -113,6 +115,7 @@ The patch system includes comprehensive unit tests ensuring reliability and prev
 - **Integration testing**: End-to-end wrapper functionality and script delegation
 
 Run tests with:
+
 ```bash
 npm test  # All tests including patch system
 npm run test:unit -- tests/unit/patches/  # Patch tests only
@@ -128,6 +131,7 @@ For consistent wrapper creation, use the comprehensive template at `common/XX-pa
 - **Example usage patterns** and best practices
 
 Copy and customize the template for new wrappers:
+
 ```bash
 cp patches/common/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
 # Edit the copied file to set WRAPPER_RUN_MODE and other specifics
@@ -144,8 +148,9 @@ The wrapper framework provides comprehensive built-in help accessible via `--hel
 ```
 
 Help output includes:
+
 - **CLI flag documentation** with examples
-- **Environment variable reference** 
+- **Environment variable reference**
 - **Override capabilities** (target scripts, extensions)
 - **Execution mode explanations**
 
@@ -158,7 +163,8 @@ The wrapper system uses standardized logging patterns for consistent output:
 - **Error messages**: `[patch][error] <error-description>` for failures (sent to stderr)
 
 Examples:
-```
+
+``` bash
 [patch] sync-host-content: Delegating to Node.js script
 [patch][dry-run] Would run: node sync-host-content.mjs --procedural-number 10
 [patch][error] Node executable '/nonexistent/node' not found
@@ -166,7 +172,7 @@ Examples:
 
 ## Dry-run examples
 
-```bash
+``` bash
 bash patches/entrypoint/00-use-cache-or-stagger.sh -n --foo bar
 bash patches/entrypoint/10-sync-host-content.sh -n
 ```
