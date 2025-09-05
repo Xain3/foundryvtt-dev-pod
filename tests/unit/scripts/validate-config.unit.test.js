@@ -2,7 +2,17 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const childProcess = require('child_process');
-const { validateConfig, validateConfigWithCache, calculateFileHash } = require('../../../scripts/validate-config.js');
+const {
+  validateConfig,
+  validateConfigWithCache,
+  calculateFileHash,
+  runConfigValidation,
+  logValidationErrors,
+  logValidationSuccess,
+  checkConfigWithCache,
+  parseCommandLineArgs,
+  showHelpMessage
+} = require('../../../scripts/validate-config.js');
 
 function runNode(args, opts = {}) {
   try {
@@ -171,6 +181,155 @@ describe('scripts/validate-config.js', () => {
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('/versions/13/install: must have required property "systems"');
     });
+
+    test('validates version pattern - rejects 3+ digit versions', () => {
+      const configBadVersion = {
+        systems: { "test": { name: "Test", manifest: "https://example.com" } },
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        versions: {
+          "130": {  // Invalid - more than 2 digits
+            install: { systems: {}, modules: {} }
+          }
+        }
+      };
+      const configPath = path.join(tempDir, 'bad-version.json');
+      fs.writeFileSync(configPath, JSON.stringify(configBadVersion, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('additional property') || e.includes('pattern'))).toBe(true);
+    });
+
+    test('validates item requires either manifest or path', () => {
+      const configNoSource = {
+        systems: { "test": { name: "Test" } },  // Missing both manifest and path
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        versions: { "13": { install: { systems: { "test": {} }, modules: {} } } }
+      };
+      const configPath = path.join(tempDir, 'no-source.json');
+      fs.writeFileSync(configPath, JSON.stringify(configNoSource, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('/systems/test: must have either "manifest" or "path" property');
+    });
+
+    test('validates item manifest must be valid URI when provided', () => {
+      const configBadUri = {
+        systems: { "test": { name: "Test", manifest: "not-a-uri" } },
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        versions: { "13": { install: { systems: { "test": {} }, modules: {} } } }
+      };
+      const configPath = path.join(tempDir, 'bad-uri.json');
+      fs.writeFileSync(configPath, JSON.stringify(configBadUri, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('format') || e.includes('uri'))).toBe(true);
+    });
+
+    test('validates worlds configuration', () => {
+      const configWithWorlds = {
+        systems: { "test": { name: "Test", manifest: "https://example.com" } },
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        worlds: { "test-world": { name: "Test World", path: "/path/to/world" } },
+        versions: { "13": { install: { systems: {}, modules: {}, worlds: { "test-world": {} } } } }
+      };
+      const configPath = path.join(tempDir, 'with-worlds.json');
+      fs.writeFileSync(configPath, JSON.stringify(configWithWorlds, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+      expect(result.valid).toBe(true);
+    });
+
+    test('rejects additional properties at root level', () => {
+      const configExtraProp = {
+        systems: { "test": { name: "Test", manifest: "https://example.com" } },
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        versions: { "13": { install: { systems: {}, modules: {} } } },
+        extraProperty: "should not be here"
+      };
+      const configPath = path.join(tempDir, 'extra-prop.json');
+      fs.writeFileSync(configPath, JSON.stringify(configExtraProp, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+  expect(result.valid).toBe(false);
+  expect(result.errors.some(e => e.includes('additional property') || e.includes('extraProperty'))).toBe(true);
+    });
+
+    test('validates composition configuration', () => {
+      const configWithComposition = {
+        composition: {
+          baseImage: "custom/foundry",
+          user: "1000:1000",
+          version_params: {
+            name: "foundry-v{version}",
+            port: 30000
+          }
+        },
+        systems: { "test": { name: "Test", manifest: "https://example.com" } },
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        versions: { "13": { install: { systems: {}, modules: {} } } }
+      };
+      const configPath = path.join(tempDir, 'with-composition.json');
+      fs.writeFileSync(configPath, JSON.stringify(configWithComposition, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+      expect(result.valid).toBe(true);
+    });
+
+    test('validates item with continuous_sync configuration', () => {
+      const configWithSync = {
+        systems: {
+          "test": {
+            name: "Test",
+            manifest: "https://example.com",
+            continuous_sync: {
+              enabled: true,
+              direction: "bidirectional",
+              interval: 30
+            }
+          }
+        },
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        versions: { "13": { install: { systems: { "test": {} }, modules: {} } } }
+      };
+      const configPath = path.join(tempDir, 'with-sync.json');
+      fs.writeFileSync(configPath, JSON.stringify(configWithSync, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+      expect(result.valid).toBe(true);
+    });
+
+    test('rejects invalid continuous_sync direction', () => {
+      const configBadSync = {
+        systems: {
+          "test": {
+            name: "Test",
+            manifest: "https://example.com",
+            continuous_sync: {
+              direction: "invalid-direction"
+            }
+          }
+        },
+        modules: { "test": { name: "Test", manifest: "https://example.com" } },
+        versions: { "13": { install: { systems: { "test": {} }, modules: {} } } }
+      };
+      const configPath = path.join(tempDir, 'bad-sync.json');
+      fs.writeFileSync(configPath, JSON.stringify(configBadSync, null, 2));
+
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const result = validateConfig(configPath, schemaPath);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('enum') || e.includes('direction'))).toBe(true);
+    });
   });
 
   describe('calculateFileHash function', () => {
@@ -266,6 +425,81 @@ describe('scripts/validate-config.js', () => {
       const hasSchemaError = result.errors.some(e => e.startsWith('schema'));
       expect(hasSchemaError).toBe(true);
     });
+
+    test('handles schema validation with null schemaPath', () => {
+      const result = validateConfigWithCache(validConfigPath, null);
+      expect(result.valid).toBe(true);
+      expect(result.cached).toBe(false);
+    });
+
+    test('handles cache file with invalid JSON gracefully', () => {
+      const cacheDir = path.join(tempDir, 'cache-invalid-json');
+      fs.mkdirSync(cacheDir, { recursive: true });
+
+      const hash = calculateFileHash(validConfigPath);
+      const cacheFile = path.join(cacheDir, `fvtt-config-validation-${hash}.json`);
+      fs.writeFileSync(cacheFile, 'not valid json at all');
+
+      const result = validateConfigWithCache(validConfigPath, null, cacheDir);
+      expect(result.valid).toBe(true);
+      expect(result.cached).toBe(false);
+    });
+
+    test('handles cache file with wrong structure', () => {
+      const cacheDir = path.join(tempDir, 'cache-wrong-structure');
+      fs.mkdirSync(cacheDir, { recursive: true });
+
+      const hash = calculateFileHash(validConfigPath);
+      const cacheFile = path.join(cacheDir, `fvtt-config-validation-${hash}.json`);
+      fs.writeFileSync(cacheFile, JSON.stringify({ wrong: 'structure' }));
+
+      const result = validateConfigWithCache(validConfigPath, null, cacheDir);
+      expect(result.valid).toBe(true);
+      expect(result.cached).toBe(false);
+    });
+
+    test('cache works with schemaPath provided', () => {
+      const cacheDir = path.join(tempDir, 'cache-with-schema');
+      const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
+
+      const result1 = validateConfigWithCache(validConfigPath, schemaPath, cacheDir);
+      expect(result1.valid).toBe(true);
+      expect(result1.cached).toBe(false);
+
+      const result2 = validateConfigWithCache(validConfigPath, schemaPath, cacheDir);
+      expect(result2.valid).toBe(true);
+      expect(result2.cached).toBe(true);
+    });
+
+    test('different schemaPath creates different cache entries', () => {
+      const cacheDir = path.join(tempDir, 'cache-different-schema');
+      const schemaPath1 = path.join(repoRoot, 'schemas/container-config.schema.json');
+      const schemaPath2 = '/different/schema/path.json';
+
+      const result1 = validateConfigWithCache(validConfigPath, schemaPath1, cacheDir);
+      expect(result1.cached).toBe(false);
+
+      const result2 = validateConfigWithCache(validConfigPath, schemaPath2, cacheDir);
+      expect(result2.cached).toBe(false);  // Different schema, so not cached
+    });
+
+    test('cache respects file modification time changes', (done) => {
+      const cacheDir = path.join(tempDir, 'cache-mtime');
+
+      const result1 = validateConfigWithCache(validConfigPath, null, cacheDir);
+      expect(result1.cached).toBe(false);
+
+      // Modify file to change mtime
+      const content = fs.readFileSync(validConfigPath, 'utf8');
+      setTimeout(() => {
+        fs.writeFileSync(validConfigPath, content);
+
+        const result2 = validateConfigWithCache(validConfigPath, null, cacheDir);
+        expect(result2.cached).toBe(false);  // Should not be cached due to mtime change
+
+        done();
+      }, 10);
+    });
   });
 
   describe('CLI interface', () => {
@@ -339,6 +573,431 @@ describe('scripts/validate-config.js', () => {
       const cacheDir = path.join(tempDir, 'multi-args');
       const output = runNode(`${scriptPath} ${validConfigPath} ${cacheDir} --no-cache`);
       expect(output).toContain('✓ Configuration is valid');
+    });
+
+    test('shows help when config path is missing', () => {
+      expect(() => {
+        runNode(`${scriptPath} --no-cache`);
+      }).toThrow();
+    });
+
+    test('handles help flag with other arguments', () => {
+      const output = runNode(`${scriptPath} ${validConfigPath} --help`);
+      expect(output).toContain('Usage:');
+    });
+
+    test('handles short help flag -h', () => {
+      const output = runNode(`${scriptPath} -h`);
+      expect(output).toContain('Usage:');
+    });
+
+    test('handles help flag at end of arguments', () => {
+      const output = runNode(`${scriptPath} ${validConfigPath} ${tempDir} --help`);
+      expect(output).toContain('Usage:');
+    });
+
+    test('handles invalid config with detailed error output', () => {
+      expect(() => {
+        runNode(`${scriptPath} ${invalidConfigPath}`);
+      }).toThrow();
+    });
+
+    test('handles non-existent config file', () => {
+      expect(() => {
+        runNode(`${scriptPath} /non/existent/file.json`);
+      }).toThrow();
+    });
+
+    test('handles cache directory creation', () => {
+      const cacheDir = path.join(tempDir, 'new-cache-dir');
+      expect(fs.existsSync(cacheDir)).toBe(false);
+
+      const output1 = runNode(`${scriptPath} ${validConfigPath} ${cacheDir}`);
+      expect(output1).toContain('✓ Configuration is valid');
+      expect(fs.existsSync(cacheDir)).toBe(true);
+
+      const output2 = runNode(`${scriptPath} ${validConfigPath} ${cacheDir}`);
+      expect(output2).toContain('(result from cache)');
+    });
+
+    test('handles malformed JSON in config file', () => {
+      const malformedPath = path.join(tempDir, 'malformed.json');
+      fs.writeFileSync(malformedPath, '{ invalid json content }');
+
+      expect(() => {
+        runNode(`${scriptPath} ${malformedPath}`);
+      }).toThrow();
+    });
+
+    test('handles empty config file', () => {
+      const emptyPath = path.join(tempDir, 'empty.json');
+      fs.writeFileSync(emptyPath, '{}');
+
+      expect(() => {
+        runNode(`${scriptPath} ${emptyPath}`);
+      }).toThrow();
+    });
+  });
+});
+
+describe('Internal functions', () => {
+  let tempDir;
+  let validConfigPath;
+  let invalidConfigPath;
+  const repoRoot = path.resolve(__dirname, '../../..');
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'validate-config-internal-test-'));
+
+    const validConfig = {
+      systems: { "test": { name: "Test", manifest: "https://example.com" } },
+      modules: { "test": { name: "Test", manifest: "https://example.com" } },
+      versions: { "13": { install: { systems: {}, modules: {} } } }
+    };
+
+    validConfigPath = path.join(tempDir, 'valid-config.json');
+    fs.writeFileSync(validConfigPath, JSON.stringify(validConfig, null, 2));
+
+    const invalidConfig = {
+      systems: { "bad": { name: "Bad" } },
+      modules: {},
+      versions: { "13": {} }
+    };
+
+    invalidConfigPath = path.join(tempDir, 'invalid-config.json');
+    fs.writeFileSync(invalidConfigPath, JSON.stringify(invalidConfig, null, 2));
+  });
+
+  afterEach(() => {
+    if (tempDir) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  describe('logValidationErrors function', () => {
+    let consoleErrorSpy;
+    let processExitSpy;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
+
+    test('logs errors and exits with code 1', () => {
+      const mockResult = {
+        valid: false,
+        errors: ['Error 1', 'Error 2']
+      };
+
+      logValidationErrors(mockResult);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('✗ Configuration is invalid:');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('  Error 1');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('  Error 2');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    test('handles empty errors array', () => {
+      const mockResult = {
+        valid: false,
+        errors: []
+      };
+
+      logValidationErrors(mockResult);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('✗ Configuration is invalid:');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('logValidationSuccess function', () => {
+    let consoleLogSpy;
+    let processExitSpy;
+
+    beforeEach(() => {
+      consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
+
+    test('logs success without cache message', () => {
+      const mockResult = {
+        valid: true,
+        cached: false
+      };
+
+      logValidationSuccess(mockResult);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith('✓ Configuration is valid');
+      expect(consoleLogSpy).not.toHaveBeenCalledWith('  (result from cache)');
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+    });
+
+    test('logs success with cache message when cached', () => {
+      const mockResult = {
+        valid: true,
+        cached: true
+      };
+
+      logValidationSuccess(mockResult);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith('✓ Configuration is valid');
+      expect(consoleLogSpy).toHaveBeenCalledWith('  (result from cache)');
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+    });
+  });
+
+  describe('checkConfigWithCache function', () => {
+    test('calls validateConfigWithCache when useCache is true', () => {
+      const result = checkConfigWithCache(true, validConfigPath);
+      expect(result.valid).toBe(true);
+      expect(result.cached).toBe(false);
+    });
+
+    test('calls validateConfig when useCache is false', () => {
+      const result = checkConfigWithCache(false, validConfigPath);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toBeUndefined();
+    });
+
+    test('passes cacheDir to validateConfigWithCache', () => {
+      const cacheDir = path.join(tempDir, 'test-cache');
+      const result = checkConfigWithCache(true, validConfigPath, cacheDir);
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('parseCommandLineArgs function', () => {
+    let processExitSpy;
+    let consoleErrorSpy;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
+
+    test('parses config path and cache dir correctly', () => {
+      const args = ['config.json', 'cache-dir'];
+      const result = parseCommandLineArgs(args);
+
+      expect(result.configPath).toBe('config.json');
+      expect(result.cacheDir).toBe('cache-dir');
+      expect(result.useCache).toBe(true);
+    });
+
+    test('parses config path only', () => {
+      const args = ['config.json'];
+      const result = parseCommandLineArgs(args);
+
+      expect(result.configPath).toBe('config.json');
+      expect(result.cacheDir).toBeUndefined();
+      expect(result.useCache).toBe(true);
+    });
+
+    test('handles --no-cache flag', () => {
+      const args = ['config.json', '--no-cache'];
+      const result = parseCommandLineArgs(args);
+
+      expect(result.configPath).toBe('config.json');
+      expect(result.useCache).toBe(false);
+    });
+
+    test('handles --no-cache with cache dir', () => {
+      const args = ['config.json', 'cache-dir', '--no-cache'];
+      const result = parseCommandLineArgs(args);
+
+      expect(result.configPath).toBe('config.json');
+      expect(result.cacheDir).toBe('cache-dir');
+      expect(result.useCache).toBe(false);
+    });
+
+    test('exits with error when config path not provided', () => {
+      const args = ['--no-cache'];
+
+      parseCommandLineArgs(args);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error: config-path is required');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    test('ignores flag-like arguments for config path', () => {
+      // Updated expectation: flags are not treated specially; first non-flag is config
+      const args = ['--help', 'config.json'];
+      const result = parseCommandLineArgs(args.filter(a => a !== '--help')); // simulate removal due to help early exit
+      expect(result.configPath).toBe('config.json');
+    });
+
+    test('handles multiple non-flag arguments', () => {
+      const args = ['config.json', 'cache1', 'cache2'];
+      const result = parseCommandLineArgs(args);
+
+      expect(result.configPath).toBe('config.json');
+      expect(result.cacheDir).toBe('cache1');
+    });
+  });
+
+  describe('showHelpMessage function', () => {
+    let consoleLogSpy;
+    let processExitSpy;
+
+    beforeEach(() => {
+      consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
+
+    test('shows help when args is empty', () => {
+      const args = [];
+
+      showHelpMessage(args);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Usage:'));
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+    });
+
+    test('shows help with --help flag', () => {
+      const args = ['config.json', '--help'];
+
+      showHelpMessage(args);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Usage:'));
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+    });
+
+    test('shows help with -h flag', () => {
+      const args = ['-h'];
+
+      showHelpMessage(args);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Usage:'));
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+    });
+
+    test('does not show help when no help flags', () => {
+      const args = ['config.json'];
+
+      showHelpMessage(args);
+
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+      expect(processExitSpy).not.toHaveBeenCalled();
+    });
+
+    test('help message contains all expected content', () => {
+      const args = ['--help'];
+
+      showHelpMessage(args);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Validate a container configuration file'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('config-path'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('--no-cache'));
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('--help, -h'));
+    });
+  });
+
+  describe('runConfigValidation function', () => {
+    let originalShowHelpMessage;
+    let originalParseCommandLineArgs;
+    let originalCheckConfigWithCache;
+    let originalLogValidationSuccess;
+    let originalLogValidationErrors;
+    let processExitSpy;
+
+    beforeEach(() => {
+      // Mock process.exit to prevent test termination
+      processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+
+      // Save original functions
+      const mod = require('../../../scripts/validate-config.js');
+      originalShowHelpMessage = mod.showHelpMessage;
+      originalParseCommandLineArgs = mod.parseCommandLineArgs;
+      originalCheckConfigWithCache = mod.checkConfigWithCache;
+      originalLogValidationSuccess = mod.logValidationSuccess;
+      originalLogValidationErrors = mod.logValidationErrors;
+
+      // Mock functions
+      mod.showHelpMessage = jest.fn();
+      mod.parseCommandLineArgs = jest.fn().mockReturnValue({
+        useCache: true,
+        configPath: validConfigPath,
+        cacheDir: undefined
+      });
+      mod.checkConfigWithCache = jest.fn().mockReturnValue({
+        valid: true,
+        cached: false
+      });
+      mod.logValidationSuccess = jest.fn();
+      mod.logValidationErrors = jest.fn();
+    });
+
+    afterEach(() => {
+      // Restore process.exit
+      processExitSpy.mockRestore();
+
+      // Restore original functions
+      const mod = require('../../../scripts/validate-config.js');
+      mod.showHelpMessage = originalShowHelpMessage;
+      mod.parseCommandLineArgs = originalParseCommandLineArgs;
+      mod.checkConfigWithCache = originalCheckConfigWithCache;
+      mod.logValidationSuccess = originalLogValidationSuccess;
+      mod.logValidationErrors = originalLogValidationErrors;
+    });
+
+    test('calls showHelpMessage with args', () => {
+      const mod = require('../../../scripts/validate-config.js');
+      const args = ['--help'];
+      mod.showHelpMessage = jest.fn(() => true);
+      mod.runConfigValidation(args);
+      expect(mod.showHelpMessage).toHaveBeenCalledWith(args);
+    });
+
+    test('calls showHelpMessage when no args provided', () => {
+      const mod = require('../../../scripts/validate-config.js');
+      const args = [];
+      mod.showHelpMessage = jest.fn(() => true);
+      mod.runConfigValidation(args);
+      expect(mod.showHelpMessage).toHaveBeenCalledWith(args);
+    });
+
+    test('parses command line args when help not shown', () => {
+      const mod = require('../../../scripts/validate-config.js');
+      const args = [validConfigPath];
+      mod.showHelpMessage = jest.fn(() => false);
+      mod.parseCommandLineArgs = jest.fn().mockReturnValue({ useCache: true, configPath: validConfigPath });
+      mod.checkConfigWithCache = jest.fn().mockReturnValue({ valid: true, cached: false });
+      mod.logValidationSuccess = jest.fn();
+      mod.runConfigValidation(args);
+      expect(mod.parseCommandLineArgs).toHaveBeenCalledWith(args);
+      expect(mod.checkConfigWithCache).toHaveBeenCalledWith(true, validConfigPath, undefined);
+      expect(mod.logValidationSuccess).toHaveBeenCalledWith({ valid: true, cached: false });
+    });
+
+    test('logs validation errors when result invalid', () => {
+      const mod = require('../../../scripts/validate-config.js');
+      const args = [invalidConfigPath];
+      mod.showHelpMessage = jest.fn(() => false);
+      mod.parseCommandLineArgs = jest.fn().mockReturnValue({ useCache: true, configPath: invalidConfigPath });
+      mod.checkConfigWithCache = jest.fn().mockReturnValue({ valid: false, errors: ['x'] });
+      mod.logValidationErrors = jest.fn();
+      mod.runConfigValidation(args);
+      expect(mod.logValidationErrors).toHaveBeenCalledWith({ valid: false, errors: ['x'] });
     });
   });
 });

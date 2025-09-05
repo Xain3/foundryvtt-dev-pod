@@ -1,6 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const Ajv = require('ajv');
+let addFormats;
+try {
+  addFormats = require('ajv-formats');
+} catch {
+  // ajv-formats is optional; tests expecting URI validation will install it.
+}
 
 class ConfigValidator {
   constructor(options = {}) {
@@ -95,6 +101,9 @@ class ConfigValidator {
         const schemaContent = fs.readFileSync(schemaPath, 'utf8');
         const schema = JSON.parse(schemaContent);
         const ajv = new Ajv({ allErrors: true, strict: false });
+        if (addFormats) {
+          try { addFormats(ajv); } catch { /* ignore */ }
+        }
         const validate = ajv.compile(schema);
         const valid = validate(config);
         if (!valid && validate.errors && validate.errors.length) {
@@ -102,7 +111,7 @@ class ConfigValidator {
             const instancePath = e.instancePath || e.dataPath || '';
             const prop = instancePath || '/';
             if (e.keyword === 'additionalProperties' && e.params && e.params.additionalProperty) {
-              return `schema${prop}: must NOT have additional properties - ${e.params.additionalProperty}`;
+              return `schema${prop}: must NOT have additional property ${e.params.additionalProperty}`;
             }
             return `schema${prop}: ${e.message}`;
           });
@@ -137,13 +146,24 @@ function validateConfigWithCache(configPath, schemaPath, cacheDir, validator = n
     fs.mkdirSync(actualCacheDir, { recursive: true });
   }
 
-  const configHash = calculateFileHash(configPath);
+  let schemaHashPart = '';
+  if (schemaPath && fs.existsSync(schemaPath)) {
+    try {
+      schemaHashPart = calculateFileHash(schemaPath).slice(0, 6);
+    } catch { /* ignore */ }
+  } else if (schemaPath) {
+    schemaHashPart = 'missing';
+  }
+  const configHash = calculateFileHash(configPath) + '-' + schemaHashPart;
   const cacheFile = path.join(actualCacheDir, `fvtt-config-validation-${configHash}.json`);
 
   if (fs.existsSync(cacheFile)) {
     try {
       const cachedResult = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-      return { ...cachedResult, cached: true };
+      if (cachedResult && typeof cachedResult.valid === 'boolean') {
+        return { ...cachedResult, cached: true };
+      }
+      // Corrupt structure => treat as miss
     } catch {
       try { fs.unlinkSync(cacheFile); } catch {}
     }
