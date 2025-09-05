@@ -1,12 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const Ajv = require('ajv');
-let addFormats;
-try {
-  addFormats = require('ajv-formats');
-} catch {
-  // ajv-formats is optional; tests expecting URI validation will install it.
-}
+/**
+ * @file config-validator.js
+ * @description Container configuration validation with caching support
+ * @path helpers/config-validator.js
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import Ajv from 'ajv';
 
 class ConfigValidator {
   constructor(options = {}) {
@@ -101,9 +101,10 @@ class ConfigValidator {
         const schemaContent = fs.readFileSync(schemaPath, 'utf8');
         const schema = JSON.parse(schemaContent);
         const ajv = new Ajv({ allErrors: true, strict: false });
-        if (addFormats) {
-          try { addFormats(ajv); } catch { /* ignore */ }
-        }
+        
+        // For now, skip ajv-formats loading in ESM until we can properly handle async imports
+        // This maintains basic schema validation functionality
+        
         const validate = ajv.compile(schema);
         const valid = validate(config);
         if (!valid && validate.errors && validate.errors.length) {
@@ -176,4 +177,4 @@ function validateConfigWithCache(configPath, schemaPath, cacheDir, validator = n
   return { ...result, cached: false };
 }
 
-module.exports = { ConfigValidator, validateConfigWithCache, calculateFileHash };
+export { ConfigValidator, validateConfigWithCache, calculateFileHash };

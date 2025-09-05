@@ -1,7 +1,7 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { ConfigValidator, validateConfigWithCache, calculateFileHash } = require('../../../helpers/config-validator');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { ConfigValidator, validateConfigWithCache, calculateFileHash } from '../../../helpers/config-validator.js';
 
 describe('scripts/config-validator.js', () => {
   let tempDir;

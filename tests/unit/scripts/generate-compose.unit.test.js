@@ -1,11 +1,15 @@
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const childProcess = require('node:child_process');
-const yaml = require('js-yaml');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import childProcess from 'node:child_process';
+import yaml from 'js-yaml';
+import { jest } from '@jest/globals';
 
 // Import the module for unit testing individual functions
-const generateCompose = require('../../../scripts/generate-compose.js');
+import * as generateCompose from '../../../scripts/generate-compose.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function runNode(args, opts = {}) {
   return childProcess.execSync(`node ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
@@ -21,7 +25,7 @@ const {
   buildComposeFromComposeConfig,
   buildComposeFromContainerConfig,
   main
-} = require('../../../scripts/generate-compose.js');
+} = generateCompose;
 
 describe('scripts/generate-compose.js', () => {
   const repoRoot = path.resolve(__dirname, '../../..');

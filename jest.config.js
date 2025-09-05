@@ -1,9 +1,6 @@
-module.exports = {
+export default {
   testEnvironment: 'node',
-  transform: {
-    // Use babel-jest to allow requiring .mjs ESM helper modules in tests via CommonJS require.
-    '^.+\\.m?js$': require.resolve('babel-jest')
-  },
+  transform: {},
   moduleFileExtensions: ['js', 'mjs', 'json', 'node'],
   testPathIgnorePatterns: ['/node_modules/'],
   coverageDirectory: 'coverage',

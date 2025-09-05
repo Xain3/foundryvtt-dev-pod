@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * Container configuration schema validation utility.
+ * @file validate-config.js
+ * @description Container configuration schema validation utility
+ * @path scripts/validate-config.js
  */
 
-const fs = require('fs');
-const path = require('path');
-const { ConfigValidator, validateConfigWithCache: classValidateWithCache, calculateFileHash } = require('../helpers/config-validator');
+import path from 'node:path';
+import { ConfigValidator, validateConfigWithCache as classValidateWithCache, calculateFileHash } from '../helpers/config-validator.js';
 
 /**
  * Validate a container configuration file against basic structural requirements.
@@ -29,7 +30,14 @@ function validateConfigWithCache(configPath, schemaPath, cacheDir) {
 
 function runConfigValidation(args) {
   // Use dynamically looked-up exported functions so tests can monkey-patch them.
-  const api = module.exports;
+  // In ESM, we need to reference the current module's exports differently
+  const api = {
+    showHelpMessage,
+    parseCommandLineArgs,
+    checkConfigWithCache,
+    logValidationSuccess,
+    logValidationErrors
+  };
   if (api.showHelpMessage(args)) {
     return; // help displayed & process.exit called (mocked in tests)
   }
@@ -97,7 +105,7 @@ function showHelpMessage(args) {
   return false;
 }
 
-module.exports = {
+export {
   validateConfig,
   validateConfigWithCache,
   calculateFileHash,
@@ -111,8 +119,8 @@ module.exports = {
   showHelpMessage
 };
 
-// CLI interface (placed after exports so dynamic lookup in runConfigValidation works)
-if (require.main === module) {
+// CLI interface
+if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
   runConfigValidation(args);
 }

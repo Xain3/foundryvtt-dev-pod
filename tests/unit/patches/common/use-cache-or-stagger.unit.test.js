@@ -1,8 +1,10 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { spawnSync } = require('node:child_process');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 function tmpDir() { return fs.mkdtempSync(path.join(os.tmpdir(), 'uc-')); }
 
 function runNode(file, env = {}) {

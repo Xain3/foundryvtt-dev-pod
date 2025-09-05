@@ -1,17 +1,13 @@
 import http from 'node:http';
 import path from 'node:path';
 import fs from 'node:fs';
-
-// Load the module using require after babel-jest transforms .mjs to CJS
-// eslint-disable-next-line import/no-commonjs
-const mod = require('../../../../../patches/common/helpers/cache.mjs');
-const {
+import {
   sha256File,
   fetchWithRetry,
   fetchToFileWithCache,
   readMetaForUrl,
   CacheManager
-} = mod;
+} from '../../../../../patches/common/helpers/cache.mjs';
 
 describe('patches/common/helpers/cache.mjs', () => {
   const tmpRoot = path.join(process.cwd(), '.jest-tmp-cache');
