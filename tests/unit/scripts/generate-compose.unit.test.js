@@ -71,4 +71,41 @@ describe('scripts/generate-compose.js', () => {
     expect(doc.services['foundry-v12'].ports[0]).toBe('31012:30000');
     expect(doc.services['foundry-v12'].image).toBe('felddy/foundryvtt:12');
   });
+
+  test('dry-run shows what would be done without writing files', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
+    const cfgPath = path.join(tmp, 'container-config.json');
+    const outPath = path.join(tmp, 'test-output.yml');
+    const cfg = {
+      systems: { s: { name: 'S', manifest: '', path: '/test.zip', install_at_startup: true } },
+      modules: { m: { name: 'M', manifest: 'https://example.com/test.json', path: '', install_at_startup: true } },
+      versions: { '13': { install: { systems: { s: {} }, modules: { m: {} } } } }
+    };
+    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+    const output = runNode(`${scriptPath} --dry-run -c ${cfgPath} -o ${outPath}`);
+    
+    expect(output).toContain('[dry-run] Would generate compose YAML from config:');
+    expect(output).toContain(cfgPath);
+    expect(output).toContain(`[dry-run] Would write to: ${outPath}`);
+    expect(output).toContain('[dry-run] Generated YAML size:');
+    expect(fs.existsSync(outPath)).toBe(false); // File should not be created
+  });
+
+  test('dry-run with -n flag works the same as --dry-run', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
+    const cfgPath = path.join(tmp, 'container-config.json');
+    const cfg = {
+      systems: { s: { name: 'S', manifest: '', path: '/test.zip', install_at_startup: true } },
+      modules: { m: { name: 'M', manifest: 'https://example.com/test.json', path: '', install_at_startup: true } },
+      versions: { '13': { install: { systems: { s: {} }, modules: { m: {} } } } }
+    };
+    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+    const output = runNode(`${scriptPath} -n -c ${cfgPath}`);
+    
+    expect(output).toContain('[dry-run] Would generate compose YAML from config:');
+    expect(output).toContain('[dry-run] Would write to: stdout');
+    expect(output).toContain('[dry-run] Generated YAML size:');
+  });
 });

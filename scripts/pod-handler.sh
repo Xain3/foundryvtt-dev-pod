@@ -5,28 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_COMPOSE_FILE="$SCRIPT_DIR/../compose.dev.yml"
 
+# Initialize COMPOSE_FILE but don't validate yet
 COMPOSE_FILE="${COMPOSE_FILE:-}"
-if [ -z "$COMPOSE_FILE" ]; then
-	if [ -f "compose.dev.yml" ]; then
-		COMPOSE_FILE="compose.dev.yml"
-	else
-		COMPOSE_FILE="$DEFAULT_COMPOSE_FILE"
-	fi
-fi
 
-if [ ! -f "$COMPOSE_FILE" ]; then
-	echo "ERROR: compose file not found: $COMPOSE_FILE" >&2
-	exit 2
-fi
-
-if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-	dc_cmd() { docker compose -f "$COMPOSE_FILE" "$@"; }
-elif command -v docker-compose >/dev/null 2>&1; then
-	dc_cmd() { docker-compose -f "$COMPOSE_FILE" "$@"; }
-else
-	echo "ERROR: neither 'docker compose' nor 'docker-compose' available in PATH" >&2
-	exit 3
-fi
+# Dry-run support
+DRY_RUN=false
 
 usage() {
 	cat <<'USAGE'
@@ -34,6 +17,7 @@ Usage: pod-handler.sh [options] <command> [service] [args...]
 
 Options:
 	-f, --file <compose.yml>  Path to docker compose file (default: compose.dev.yml or scripts/../compose.dev.yml)
+	--dry-run, -n             Show what docker compose commands would be executed without executing them
 
 Commands:
 	up [-d]            Start all services (or detached with -d)
@@ -68,12 +52,50 @@ while [ "$#" -gt 0 ]; do
 			fi
 			shift
 			;;
+		--dry-run|-n)
+			DRY_RUN=true
+			shift
+			;;
 		help|-h|--help|up|start|down|restart|build|pull|ps|logs|exec|shell|run-builder|stop-builder)
 			cmd="$1"; shift; break;;
 		*)
 			cmd="$1"; shift; break;;
 	esac
 done
+
+# Now resolve and validate the compose file
+if [ -z "$COMPOSE_FILE" ]; then
+	if [ -f "compose.dev.yml" ]; then
+		COMPOSE_FILE="compose.dev.yml"
+	else
+		COMPOSE_FILE="$DEFAULT_COMPOSE_FILE"
+	fi
+fi
+
+# Skip compose file validation for help command
+if [ "${cmd:-}" != "help" ] && [ "${cmd:-}" != "-h" ] && [ "${cmd:-}" != "--help" ]; then
+	if [ ! -f "$COMPOSE_FILE" ]; then
+		echo "ERROR: compose file not found: $COMPOSE_FILE" >&2
+		exit 2
+	fi
+fi
+
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+	dc_cmd() { docker compose -f "$COMPOSE_FILE" "$@"; }
+elif command -v docker-compose >/dev/null 2>&1; then
+	dc_cmd() { docker-compose -f "$COMPOSE_FILE" "$@"; }
+else
+	echo "ERROR: neither 'docker compose' nor 'docker-compose' available in PATH" >&2
+	exit 3
+fi
+
+execute_or_dry_run() {
+	if [ "$DRY_RUN" = "true" ]; then
+		echo "[dry-run] Would run: $*"
+		return 0
+	fi
+	"$@"
+}
 
 case "$cmd" in
 	help|-h|--help)
@@ -86,9 +108,9 @@ case "$cmd" in
 			shift
 		fi
 		if $DETACH; then
-			dc_cmd up -d --remove-orphans
+			execute_or_dry_run dc_cmd up -d --remove-orphans
 		else
-			dc_cmd up --remove-orphans
+			execute_or_dry_run dc_cmd up --remove-orphans
 		fi
 		;;
 	start)
@@ -97,30 +119,30 @@ case "$cmd" in
 			exit 1
 		fi
 		svc="$1"; shift
-		dc_cmd up -d --build --no-deps "$svc"
+		execute_or_dry_run dc_cmd up -d --build --no-deps "$svc"
 		;;
 	down)
-		dc_cmd down
+		execute_or_dry_run dc_cmd down
 		;;
 	restart)
 		if [ $# -lt 1 ]; then
 			echo "Usage: $0 restart SERVICE" >&2
 			exit 1
 		fi
-		dc_cmd restart "$1"
+		execute_or_dry_run dc_cmd restart "$1"
 		;;
 	build)
 		if [ $# -ge 1 ]; then
-			dc_cmd build "$1"
+			execute_or_dry_run dc_cmd build "$1"
 		else
-			dc_cmd build
+			execute_or_dry_run dc_cmd build
 		fi
 		;;
 	pull)
-		dc_cmd pull
+		execute_or_dry_run dc_cmd pull
 		;;
 	ps)
-		dc_cmd ps
+		execute_or_dry_run dc_cmd ps
 		;;
 	logs)
 		FOLLOW=false
@@ -129,9 +151,9 @@ case "$cmd" in
 			shift
 		fi
 		if [ $# -ge 1 ]; then
-			if $FOLLOW; then dc_cmd logs -f "$1"; else dc_cmd logs "$1"; fi
+			if $FOLLOW; then execute_or_dry_run dc_cmd logs -f "$1"; else execute_or_dry_run dc_cmd logs "$1"; fi
 		else
-			if $FOLLOW; then dc_cmd logs -f; else dc_cmd logs; fi
+			if $FOLLOW; then execute_or_dry_run dc_cmd logs -f; else execute_or_dry_run dc_cmd logs; fi
 		fi
 		;;
 	exec)
@@ -141,9 +163,9 @@ case "$cmd" in
 		fi
 		svc="$1"; shift
 		if [ $# -eq 0 ]; then
-			dc_cmd exec -u 0 -it "$svc" sh
+			execute_or_dry_run dc_cmd exec -u 0 -it "$svc" sh
 		else
-			dc_cmd exec -u 0 -it "$svc" "$@"
+			execute_or_dry_run dc_cmd exec -u 0 -it "$svc" "$@"
 		fi
 		;;
 	shell)
@@ -152,13 +174,13 @@ case "$cmd" in
 			exit 1
 		fi
 		svc="$1"; shift
-		dc_cmd exec -u 0 -it "$svc" sh -c 'if command -v bash >/dev/null 2>&1; then exec bash; elif command -v ash >/dev/null 2>&1; then exec ash; else exec sh; fi'
+		execute_or_dry_run dc_cmd exec -u 0 -it "$svc" sh -c 'if command -v bash >/dev/null 2>&1; then exec bash; elif command -v ash >/dev/null 2>&1; then exec ash; else exec sh; fi'
 		;;
 	run-builder)
-		dc_cmd up -d --build builder
+		execute_or_dry_run dc_cmd up -d --build builder
 		;;
 	stop-builder)
-		dc_cmd stop builder || true
+		execute_or_dry_run dc_cmd stop builder || true
 		;;
 	*)
 		echo "Unknown command: $cmd" >&2

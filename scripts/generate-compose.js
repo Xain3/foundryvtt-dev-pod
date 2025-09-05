@@ -9,6 +9,13 @@
  * CLI usage (zsh):
  *  node scripts/generate-compose.js -c container-config.json -o compose.dev.yml
  *  node scripts/generate-compose.js --print               # print to stdout
+ *  node scripts/generate-compose.js --dry-run             # show what would be done
+ *
+ * Options:
+ *  -c, --config <file>     Path to config file (default: container-config.json)
+ *  -o, --out <file>        Output file path (omit for stdout)
+ *  --print                 Print to stdout (same as omitting -o)
+ *  --dry-run, -n           Show what would be done without writing files
  *
  * Environment overrides (container-config mode):
  *  - COMPOSE_BASE_IMAGE: Base image for Foundry services (default: felddy/foundryvtt)
@@ -93,6 +100,7 @@ function parseArgs(argv) {
 	const args = {
 		config: 'container-config.json',
 		out: '',
+		dryRun: false,
 		secretsMode: process.env.COMPOSE_SECRETS_MODE || 'auto',
 		secretsFile: process.env.COMPOSE_SECRETS_FILE || './secrets.json',
 		secretsExternalName: process.env.COMPOSE_SECRETS_EXTERNAL_NAME || '',
@@ -106,6 +114,8 @@ function parseArgs(argv) {
 			args.out = argv[++i];
 		} else if (a === '--print') {
 			args.out = '';
+		} else if (a === '--dry-run' || a === '-n') {
+			args.dryRun = true;
 		} else if (a === '--secrets-mode' && argv[i + 1]) {
 			args.secretsMode = argv[++i];
 		} else if (a === '--secrets-file' && argv[i + 1]) {
@@ -303,7 +313,7 @@ function buildComposeFromContainerConfig(containerCfg, opts = {}, secretsConf) {
 
 function main() {
 	const args = parseArgs(process.argv);
-	const { config: confPath, out } = args;
+	const { config: confPath, out, dryRun } = args;
 	const absConf = path.resolve(confPath);
 	if (!fs.existsSync(absConf)) {
 		console.error(`Config file not found: ${absConf}`);
@@ -324,6 +334,18 @@ function main() {
 		compose = buildComposeFromComposeConfig(cfg, secretsConf);
 	}
 	const yml = yaml.dump(compose, { noRefs: true, lineWidth: 120 });
+
+	if (dryRun) {
+		console.log('[dry-run] Would generate compose YAML from config:', absConf);
+		if (out) {
+			const absOut = path.resolve(out);
+			console.log(`[dry-run] Would write to: ${absOut}`);
+		} else {
+			console.log('[dry-run] Would write to: stdout');
+		}
+		console.log(`[dry-run] Generated YAML size: ${yml.length} characters`);
+		return;
+	}
 
 	if (out) {
 		const absOut = path.resolve(out);
