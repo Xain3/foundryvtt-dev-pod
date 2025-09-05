@@ -29,13 +29,25 @@ function validateConfigWithCache(configPath, schemaPath, cacheDir) {
 }
 
 function runConfigValidation(args) {
-  showHelpMessage(args);
-
-  const { useCache, configPath, cacheDir } = parseCommandLineArgs(args);
-
-  const result = checkConfigWithCache(useCache, configPath, cacheDir);
-
-  result.valid ? logValidationSuccess(result) : logValidationErrors(result);
+  // Use dynamically looked-up exported functions so tests can monkey-patch them.
+  // In ESM, we need to reference the current module's exports differently
+  const api = {
+    showHelpMessage,
+    parseCommandLineArgs,
+    checkConfigWithCache,
+    logValidationSuccess,
+    logValidationErrors
+  };
+  if (api.showHelpMessage(args)) {
+    return; // help displayed & process.exit called (mocked in tests)
+  }
+  const parsed = api.parseCommandLineArgs(args);
+  if (!parsed) {
+    return; // parse already handled error + exit
+  }
+  const { useCache, configPath, cacheDir } = parsed;
+  const result = api.checkConfigWithCache(useCache, configPath, cacheDir);
+  result.valid ? api.logValidationSuccess(result) : api.logValidationErrors(result);
 }
 
 function logValidationErrors(result) {
@@ -61,13 +73,15 @@ function checkConfigWithCache(useCache, configPath, cacheDir) {
 }
 
 function parseCommandLineArgs(args) {
-  const configPath = args.filter(arg => !arg.startsWith('--'))[0];
-  const cacheDir = args.filter(arg => !arg.startsWith('--'))[1];
+  const positional = args.filter(arg => !arg.startsWith('--'));
+  const configPath = positional[0];
+  const cacheDir = positional[1];
   const useCache = !args.includes('--no-cache');
 
   if (!configPath) {
     console.error('Error: config-path is required');
     process.exit(1);
+    return null;
   }
   return { useCache, configPath, cacheDir };
 }
@@ -86,19 +100,28 @@ function showHelpMessage(args) {
     console.log('  --no-cache    Skip caching and always perform fresh validation');
     console.log('  --help, -h    Show this help message');
     process.exit(0);
+    return true;
   }
+  return false;
 }
-
-// CLI interface
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const args = process.argv.slice(2);
-
-  runConfigValidation(args);
 }
 
 export {
   validateConfig,
   validateConfigWithCache,
   calculateFileHash,
-  ConfigValidator
+  ConfigValidator,
+  // Export internal functions for testing
+  runConfigValidation,
+  logValidationErrors,
+  logValidationSuccess,
+  checkConfigWithCache,
+  parseCommandLineArgs,
+  showHelpMessage
 };
+
+// CLI interface
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  runConfigValidation(args);
+}
