@@ -84,6 +84,16 @@ if [ "${cmd:-}" != "help" ] && [ "${cmd:-}" != "-h" ] && [ "${cmd:-}" != "--help
 		echo "ERROR: compose file not found: $COMPOSE_FILE" >&2
 		exit 2
 	fi
+	
+	# Validate container-config.json if it exists
+	CONFIG_FILE="container-config.json"
+	if [ -f "$CONFIG_FILE" ]; then
+		echo "Validating container configuration..."
+		if ! node "$SCRIPT_DIR/validate-config.js" "$CONFIG_FILE" /tmp >/dev/null 2>&1; then
+			echo "ERROR: Container configuration validation failed" >&2
+			exit 2
+		fi
+	fi
 fi
 
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then

@@ -95,6 +95,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
+const { validateConfig } = require('./validate-config.js');
 
 function parseArgs(argv) {
 	const args = {
@@ -320,9 +321,21 @@ function main() {
 		process.exit(1);
 	}
 	const cfg = JSON.parse(fs.readFileSync(absConf, 'utf8'));
+	
+	// Validate configuration if it looks like a container config
+	const looksLikeContainerConfig = cfg && typeof cfg === 'object' && cfg.systems && cfg.modules && cfg.versions && !Array.isArray(cfg.versions);
+	if (looksLikeContainerConfig) {
+		const validationResult = validateConfig(absConf);
+		if (!validationResult.valid) {
+			console.error('Configuration validation failed:');
+			validationResult.errors.forEach(error => {
+				console.error(`  ${error}`);
+			});
+			process.exit(1);
+		}
+	}
 	const secretsConf = resolveSecrets(args);
 	let compose;
-	const looksLikeContainerConfig = cfg && typeof cfg === 'object' && cfg.systems && cfg.modules && cfg.versions && !Array.isArray(cfg.versions);
 	if (looksLikeContainerConfig) {
 		compose = buildComposeFromContainerConfig(cfg, {
 			baseImage: process.env.COMPOSE_BASE_IMAGE,
