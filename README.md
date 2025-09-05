@@ -30,12 +30,14 @@ Both `fvtt-compose-gen` and `fvtt-pod` automatically validate your `container-co
 ### Validation in action
 
 **Valid configuration passes silently**:
+
 ```zsh
 npx fvtt-compose-gen -c container-config.json --dry-run
 # [dry-run] Would generate compose YAML from config: /path/to/container-config.json
 ```
 
 **Invalid configuration is caught early**:
+
 ```zsh
 npx fvtt-compose-gen -c bad-config.json --dry-run
 # Configuration validation failed:
