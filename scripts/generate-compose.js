@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @file generate-compose.js  
+ * @file generate-compose.js
  * @description Generate docker compose YAML from a JSON config
  * @path scripts/generate-compose.js
  */
@@ -199,6 +199,7 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 	}
 
 	if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
+		console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
 		const secretName = 'config_json_gcp';
 		const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
 
@@ -217,6 +218,7 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 	}
 
 	if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
+		console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
 		const secretName = 'config_json_azure';
 		const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
 
@@ -235,6 +237,7 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 	}
 
 	if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
+		console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
 		const secretName = 'config_json_aws';
 		const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
 
@@ -371,7 +374,6 @@ function buildComposeFromContainerConfig(containerCfg, opts = {}, secretsConf) {
 		const defDir = resolveTemplatedString(vp.versionDir, intVer) || `v${intVer}`;
 		const defTag = resolveTemplatedString(vp.tag, intVer) || (intVer >= 13 ? 'release' : `${intVer}`);
 		const defPort = resolveTemplatedNumber(vp.port, intVer) ?? (30000 + intVer);
-		const defEnvSuffix = resolveTemplatedString(vp.envSuffix, intVer) || defDir;
 
 		const name = typeof cp.name === 'string' && cp.name ? cp.name : defName;
 		const dir = typeof cp.versionDir === 'string' && cp.versionDir ? cp.versionDir : defDir;

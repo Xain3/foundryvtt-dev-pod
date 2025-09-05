@@ -63,17 +63,19 @@ The `fvtt-pod` command caches validation results to avoid repeated checks until 
 
 ## Secrets modes
 
-Control how credentials are passed into containers during generation:
+Control how credentials are passed into containers during generation.
+
+NOTE: Cloud provider modes (gcp, azure, aws) are currently experimental and untested. Interfaces and behavior may change; use with caution and validate outputs before relying on them in production.
 
 - `file` (default):
   - `--secrets-file ./secrets.json` and mounted in containers as `/run/secrets/config.json`.
 - `external`:
   - `--secrets-external foundry_secrets` references an external secret managed by Docker/Swarm.
-- `gcp`:
+- `gcp` (experimental):
   - `--secrets-gcp-project my-project --secrets-gcp-secret foundry-config` retrieves secrets from Google Cloud Secret Manager.
-- `azure`:
+- `azure` (experimental):
   - `--secrets-azure-vault my-vault --secrets-azure-secret foundry-config` retrieves secrets from Azure Key Vault.
-- `aws`:
+- `aws` (experimental):
   - `--secrets-aws-region us-east-1 --secrets-aws-secret foundry-config` retrieves secrets from AWS Secrets Manager.
 - `none`:
   - Omits secrets; use `env_file`/`environment` in compose instead.
@@ -96,6 +98,7 @@ npx fvtt-compose-gen -c container-config.json -o compose.yml \
 ```
 
 **Prerequisites for GCP mode:**
+
 - `gcloud` CLI installed and authenticated (`gcloud auth login`)
 - Appropriate permissions to access the specified secret in Secret Manager
 - Secret should contain JSON with Foundry VTT credentials
@@ -118,6 +121,7 @@ npx fvtt-compose-gen -c container-config.json -o compose.yml \
 ```
 
 **Prerequisites for Azure mode:**
+
 - `az` CLI installed and authenticated (`az login`)
 - Appropriate permissions to access the specified Key Vault and secret
 - Secret should contain JSON with Foundry VTT credentials
@@ -140,11 +144,13 @@ npx fvtt-compose-gen -c container-config.json -o compose.yml \
 ```
 
 **Prerequisites for AWS mode:**
+
 - `aws` CLI installed and configured (`aws configure` or IAM roles)
 - Appropriate permissions to access the specified secret in Secrets Manager
 - Secret should contain JSON with Foundry VTT credentials
 
 **Example secret content for all cloud providers:**
+
 ```json
 {
   "foundry_username": "your-foundry-username",

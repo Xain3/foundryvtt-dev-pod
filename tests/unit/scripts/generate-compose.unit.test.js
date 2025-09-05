@@ -492,6 +492,7 @@ describe('scripts/generate-compose.js', () => {
   test('supports GCP secrets mode with project and secret name', () => {
     const mockSecretContent = '{"foundry_license": "test-license", "foundry_password": "test-password"}';
     const mockRetrieveGcpSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'gcp',
@@ -510,8 +511,9 @@ describe('scripts/generate-compose.js', () => {
       target: 'config.json'
     }]);
 
-    // Verify the GCP function was called correctly
+  // Verify the GCP function was called correctly
     expect(mockRetrieveGcpSecret).toHaveBeenCalledWith('test-project', 'test-secret');
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('GCP secrets mode is experimental'));
 
     // Verify the secret content was written to the file
     const secretFile = result.topLevel.config_json_gcp.file;
@@ -520,6 +522,7 @@ describe('scripts/generate-compose.js', () => {
 
     // Clean up temp file
     fs.unlinkSync(secretFile);
+    warnSpy.mockRestore();
   });
 
   test('auto-detects GCP mode when project and secret are provided', () => {
@@ -602,6 +605,7 @@ describe('scripts/generate-compose.js', () => {
   test('supports Azure secrets mode with vault and secret name', () => {
     const mockSecretContent = '{"foundry_license": "azure-license", "foundry_password": "azure-password"}';
     const mockRetrieveAzureSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'azure',
@@ -620,8 +624,9 @@ describe('scripts/generate-compose.js', () => {
       target: 'config.json'
     }]);
 
-    // Verify the Azure function was called correctly
+  // Verify the Azure function was called correctly
     expect(mockRetrieveAzureSecret).toHaveBeenCalledWith('test-vault', 'test-secret');
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Azure secrets mode is experimental'));
 
     // Verify the secret content was written to the file
     const secretFile = result.topLevel.config_json_azure.file;
@@ -630,6 +635,7 @@ describe('scripts/generate-compose.js', () => {
 
     // Clean up temp file
     fs.unlinkSync(secretFile);
+    warnSpy.mockRestore();
   });
 
   test('auto-detects Azure mode when vault and secret are provided', () => {
@@ -675,6 +681,7 @@ describe('scripts/generate-compose.js', () => {
   test('supports AWS secrets mode with region and secret name', () => {
     const mockSecretContent = '{"foundry_license": "aws-license", "foundry_password": "aws-password"}';
     const mockRetrieveAwsSecret = jest.fn().mockReturnValue(mockSecretContent);
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const result = generateCompose.resolveSecrets({
       secretsMode: 'aws',
@@ -693,8 +700,9 @@ describe('scripts/generate-compose.js', () => {
       target: 'config.json'
     }]);
 
-    // Verify the AWS function was called correctly
+  // Verify the AWS function was called correctly
     expect(mockRetrieveAwsSecret).toHaveBeenCalledWith('us-east-1', 'test-secret');
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('AWS secrets mode is experimental'));
 
     // Verify the secret content was written to the file
     const secretFile = result.topLevel.config_json_aws.file;
@@ -703,6 +711,7 @@ describe('scripts/generate-compose.js', () => {
 
     // Clean up temp file
     fs.unlinkSync(secretFile);
+    warnSpy.mockRestore();
   });
 
   test('auto-detects AWS mode when region and secret are provided', () => {
