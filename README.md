@@ -17,6 +17,48 @@ npx fvtt-pod up -d
 npx fvtt-pod logs -f foundry-v13
 ```
 
+## Configuration Validation
+
+Both `fvtt-compose-gen` and `fvtt-pod` automatically validate your `container-config.json` file against structural requirements before processing. The validation ensures your configuration has all required properties and proper structure.
+
+### What gets validated
+
+- **Required top-level properties**: `systems`, `modules`, `versions`
+- **Component validation**: Each system/module must have a `name` and either `manifest` or `path`
+- **Version structure**: Version configs must include required `install` sections with `systems` and `modules` objects
+
+### Validation in action
+
+**Valid configuration passes silently**:
+```zsh
+npx fvtt-compose-gen -c container-config.json --dry-run
+# [dry-run] Would generate compose YAML from config: /path/to/container-config.json
+```
+
+**Invalid configuration is caught early**:
+```zsh
+npx fvtt-compose-gen -c bad-config.json --dry-run
+# Configuration validation failed:
+#   /systems/my-system: must have either "manifest" or "path" property
+#   /versions/13: must have required property "install"
+```
+
+### Standalone validation tool
+
+You can also validate configurations directly:
+
+```zsh
+# Validate a config file
+npx scripts/validate-config.js container-config.json
+
+# Skip caching for fresh validation
+npx scripts/validate-config.js container-config.json --no-cache
+```
+
+### Caching
+
+The `fvtt-pod` command caches validation results to avoid repeated checks until your configuration changes. You'll see a "Validating container configuration..." message only when validation is actually performed.
+
 ## Secrets modes
 
 Control how credentials are passed into containers during generation:
