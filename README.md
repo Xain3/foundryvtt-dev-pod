@@ -69,13 +69,94 @@ Control how credentials are passed into containers during generation:
   - `--secrets-file ./secrets.json` and mounted in containers as `/run/secrets/config.json`.
 - `external`:
   - `--secrets-external foundry_secrets` references an external secret managed by Docker/Swarm.
+- `gcp`:
+  - `--secrets-gcp-project my-project --secrets-gcp-secret foundry-config` retrieves secrets from Google Cloud Secret Manager.
+- `azure`:
+  - `--secrets-azure-vault my-vault --secrets-azure-secret foundry-config` retrieves secrets from Azure Key Vault.
+- `aws`:
+  - `--secrets-aws-region us-east-1 --secrets-aws-secret foundry-config` retrieves secrets from AWS Secrets Manager.
 - `none`:
   - Omits secrets; use `env_file`/`environment` in compose instead.
 
+### Google Cloud Platform (GCP) integration
+
+The `gcp` mode retrieves secrets directly from Google Cloud Secret Manager:
+
+```zsh
+# Using explicit GCP mode
+npx fvtt-compose-gen -c container-config.json -o compose.yml \
+  --secrets-mode gcp \
+  --secrets-gcp-project my-foundry-project \
+  --secrets-gcp-secret foundry-credentials
+
+# Auto-detection (if project and secret are provided, GCP mode is used automatically)
+npx fvtt-compose-gen -c container-config.json -o compose.yml \
+  --secrets-gcp-project my-foundry-project \
+  --secrets-gcp-secret foundry-credentials
+```
+
+**Prerequisites for GCP mode:**
+- `gcloud` CLI installed and authenticated (`gcloud auth login`)
+- Appropriate permissions to access the specified secret in Secret Manager
+- Secret should contain JSON with Foundry VTT credentials
+
+### Microsoft Azure integration
+
+The `azure` mode retrieves secrets directly from Azure Key Vault:
+
+```zsh
+# Using explicit Azure mode
+npx fvtt-compose-gen -c container-config.json -o compose.yml \
+  --secrets-mode azure \
+  --secrets-azure-vault my-foundry-vault \
+  --secrets-azure-secret foundry-credentials
+
+# Auto-detection (if vault and secret are provided, Azure mode is used automatically)
+npx fvtt-compose-gen -c container-config.json -o compose.yml \
+  --secrets-azure-vault my-foundry-vault \
+  --secrets-azure-secret foundry-credentials
+```
+
+**Prerequisites for Azure mode:**
+- `az` CLI installed and authenticated (`az login`)
+- Appropriate permissions to access the specified Key Vault and secret
+- Secret should contain JSON with Foundry VTT credentials
+
+### Amazon Web Services (AWS) integration
+
+The `aws` mode retrieves secrets directly from AWS Secrets Manager:
+
+```zsh
+# Using explicit AWS mode
+npx fvtt-compose-gen -c container-config.json -o compose.yml \
+  --secrets-mode aws \
+  --secrets-aws-region us-east-1 \
+  --secrets-aws-secret foundry-credentials
+
+# Auto-detection (if region and secret are provided, AWS mode is used automatically)
+npx fvtt-compose-gen -c container-config.json -o compose.yml \
+  --secrets-aws-region us-east-1 \
+  --secrets-aws-secret foundry-credentials
+```
+
+**Prerequisites for AWS mode:**
+- `aws` CLI installed and configured (`aws configure` or IAM roles)
+- Appropriate permissions to access the specified secret in Secrets Manager
+- Secret should contain JSON with Foundry VTT credentials
+
+**Example secret content for all cloud providers:**
+```json
+{
+  "foundry_username": "your-foundry-username",
+  "foundry_password": "your-foundry-password",
+  "foundry_license_key": "your-license-key"
+}
+```
+
 Flags or env vars:
 
-- Flags: `--secrets-mode`, `--secrets-file`, `--secrets-external`, `--secrets-target`
-- Env: `COMPOSE_SECRETS_MODE`, `COMPOSE_SECRETS_FILE`, `COMPOSE_SECRETS_EXTERNAL_NAME`, `COMPOSE_SECRETS_TARGET`
+- Flags: `--secrets-mode`, `--secrets-file`, `--secrets-external`, `--secrets-target`, `--secrets-gcp-project`, `--secrets-gcp-secret`, `--secrets-azure-vault`, `--secrets-azure-secret`, `--secrets-aws-region`, `--secrets-aws-secret`
+- Env: `COMPOSE_SECRETS_MODE`, `COMPOSE_SECRETS_FILE`, `COMPOSE_SECRETS_EXTERNAL_NAME`, `COMPOSE_SECRETS_TARGET`, `COMPOSE_SECRETS_GCP_PROJECT`, `COMPOSE_SECRETS_GCP_SECRET`, `COMPOSE_SECRETS_AZURE_VAULT`, `COMPOSE_SECRETS_AZURE_SECRET`, `COMPOSE_SECRETS_AWS_REGION`, `COMPOSE_SECRETS_AWS_SECRET`
 
 ## Pod helper
 
