@@ -368,6 +368,18 @@ function main() {
 	}
 }
 
+// Export functions for testing
+module.exports = {
+	parseArgs,
+	resolveSecrets,
+	toEnvList,
+	resolveTemplatedString,
+	resolveTemplatedNumber,
+	buildComposeFromComposeConfig,
+	buildComposeFromContainerConfig,
+	main
+};
+
 if (require.main === module) {
 	try { main(); } catch (e) { console.error(e?.stack || String(e)); process.exit(1); }
 }

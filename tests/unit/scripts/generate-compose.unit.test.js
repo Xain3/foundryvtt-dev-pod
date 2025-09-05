@@ -8,9 +8,382 @@ function runNode(args, opts = {}) {
   return childProcess.execSync(`node ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
 }
 
+// Import the module to test functions directly
+const {
+  parseArgs,
+  resolveSecrets,
+  toEnvList,
+  resolveTemplatedString,
+  resolveTemplatedNumber,
+  buildComposeFromComposeConfig,
+  buildComposeFromContainerConfig,
+  main
+} = require('../../../scripts/generate-compose.js');
+
 describe('scripts/generate-compose.js', () => {
   const repoRoot = path.resolve(__dirname, '../../..');
   const scriptPath = path.join(repoRoot, 'scripts/generate-compose.js');
+
+  describe('parseArgs function', () => {
+    test('parses default arguments correctly', () => {
+      const args = parseArgs(['node', 'script.js']);
+      expect(args.config).toBe('container-config.json');
+      expect(args.out).toBe('');
+      expect(args.dryRun).toBe(false);
+      expect(args.secretsMode).toBe('auto');
+    });
+
+    test('parses config argument with -c', () => {
+      const args = parseArgs(['node', 'script.js', '-c', 'custom-config.json']);
+      expect(args.config).toBe('custom-config.json');
+    });
+
+    test('parses config argument with --config', () => {
+      const args = parseArgs(['node', 'script.js', '--config', 'another-config.json']);
+      expect(args.config).toBe('another-config.json');
+    });
+
+    test('parses output argument with -o', () => {
+      const args = parseArgs(['node', 'script.js', '-o', 'output.yml']);
+      expect(args.out).toBe('output.yml');
+    });
+
+    test('parses output argument with --out', () => {
+      const args = parseArgs(['node', 'script.js', '--out', 'compose.yml']);
+      expect(args.out).toBe('compose.yml');
+    });
+
+    test('handles --print flag', () => {
+      const args = parseArgs(['node', 'script.js', '--print']);
+      expect(args.out).toBe('');
+    });
+
+    test('handles --dry-run flag', () => {
+      const args = parseArgs(['node', 'script.js', '--dry-run']);
+      expect(args.dryRun).toBe(true);
+    });
+
+    test('handles -n flag for dry run', () => {
+      const args = parseArgs(['node', 'script.js', '-n']);
+      expect(args.dryRun).toBe(true);
+    });
+
+    test('parses secrets mode arguments', () => {
+      const args = parseArgs(['node', 'script.js', '--secrets-mode', 'external', '--secrets-file', './custom.json', '--secrets-external', 'my_secret', '--secrets-target', 'app.json']);
+      expect(args.secretsMode).toBe('external');
+      expect(args.secretsFile).toBe('./custom.json');
+      expect(args.secretsExternalName).toBe('my_secret');
+      expect(args.secretsTarget).toBe('app.json');
+    });
+  });
+
+  describe('resolveSecrets function', () => {
+    test('resolves none mode', () => {
+      const secrets = resolveSecrets({ secretsMode: 'none' });
+      expect(secrets.topLevel).toEqual({});
+      expect(secrets.serviceRef).toEqual([]);
+    });
+
+    test('resolves external mode with name', () => {
+      const secrets = resolveSecrets({ secretsMode: 'external', secretsExternalName: 'my_config', secretsTarget: 'custom.json' });
+      expect(secrets.topLevel).toEqual({ my_config: { external: true } });
+      expect(secrets.serviceRef).toEqual([{ source: 'my_config', target: 'custom.json' }]);
+    });
+
+    test('resolves auto mode with external name', () => {
+      const secrets = resolveSecrets({ secretsMode: 'auto', secretsExternalName: 'external_secret' });
+      expect(secrets.topLevel).toEqual({ external_secret: { external: true } });
+      expect(secrets.serviceRef).toEqual([{ source: 'external_secret', target: 'config.json' }]);
+    });
+
+    test('resolves default file mode', () => {
+      const secrets = resolveSecrets({ secretsMode: 'file', secretsFile: './my-secrets.json', secretsTarget: 'app-config.json' });
+      expect(secrets.topLevel).toEqual({ config_json: { file: './my-secrets.json' } });
+      expect(secrets.serviceRef).toEqual([{ source: 'config_json', target: 'app-config.json' }]);
+    });
+  });
+
+  describe('toEnvList function', () => {
+    test('converts object to env list', () => {
+      const result = toEnvList({ FOO: 'bar', BAZ: 'qux' });
+      expect(result).toEqual(['FOO=bar', 'BAZ=qux']);
+    });
+
+    test('returns empty array for non-object input', () => {
+      expect(toEnvList('string')).toEqual([]);
+      expect(toEnvList(123)).toEqual([]);
+      expect(toEnvList(['array'])).toEqual([]);
+      expect(toEnvList(null)).toEqual([]);
+    });
+
+    test('returns empty array for undefined input', () => {
+      expect(toEnvList(undefined)).toEqual([]);
+    });
+  });
+
+  describe('resolveTemplatedString function', () => {
+    test('replaces {version} placeholder', () => {
+      expect(resolveTemplatedString('foundry-v{version}', 13)).toBe('foundry-v13');
+      expect(resolveTemplatedString('v{version}-test', 12)).toBe('v12-test');
+    });
+
+    test('handles multiple placeholders', () => {
+      expect(resolveTemplatedString('{version}.{version}', 11)).toBe('11.11');
+    });
+
+    test('returns undefined for non-string input', () => {
+      expect(resolveTemplatedString(123, 13)).toBeUndefined();
+      expect(resolveTemplatedString(null, 13)).toBeUndefined();
+    });
+  });
+
+  describe('resolveTemplatedNumber function', () => {
+    test('returns number as-is', () => {
+      expect(resolveTemplatedNumber(3000, 13)).toBe(3000);
+    });
+
+    test('resolves templated string to number', () => {
+      expect(resolveTemplatedNumber('300{version}', 13)).toBe(30013);
+      expect(resolveTemplatedNumber('{version}000', 12)).toBe(12000);
+    });
+
+    test('returns undefined for invalid input', () => {
+      expect(resolveTemplatedNumber('invalid', 13)).toBeUndefined();
+      expect(resolveTemplatedNumber(null, 13)).toBeUndefined();
+    });
+  });
+
+  describe('buildComposeFromComposeConfig function', () => {
+    test('builds compose configuration', () => {
+      const config = {
+        baseImage: 'test/foundry',
+        user: '1000:1000',
+        versions: [
+          {
+            name: 'foundry-test',
+            tag: 'latest',
+            port: 3001,
+            versionDir: 'test',
+            fetchStaggerSeconds: 5
+          }
+        ],
+        builder: { enabled: true, image: 'node:18' }
+      };
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      const result = buildComposeFromComposeConfig(config, secretsConf);
+      
+      expect(result.services['foundry-test']).toBeDefined();
+      expect(result.services['foundry-test'].image).toBe('test/foundry:latest');
+      expect(result.services['foundry-test'].user).toBe('1000:1000');
+      expect(result.services['foundry-test'].ports).toEqual(['3001:30000']);
+      expect(result.services.builder).toBeDefined();
+      expect(result.services.builder.image).toBe('node:18');
+      expect(result.volumes['foundry-test-data']).toBe(null);
+    });
+
+    test('handles missing version data gracefully', () => {
+      const config = { versions: [{ name: '', versionDir: '' }] };
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      expect(() => buildComposeFromComposeConfig(config, secretsConf)).toThrow();
+    });
+
+    test('disables builder when configured', () => {
+      const config = {
+        versions: [{ name: 'test', versionDir: 'v1' }],
+        builder: { enabled: false }
+      };
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      const result = buildComposeFromComposeConfig(config, secretsConf);
+      expect(result.services.builder).toBeUndefined();
+    });
+  });
+
+  describe('buildComposeFromContainerConfig function', () => {
+    test('builds compose from container config', () => {
+      const containerCfg = {
+        composition: {
+          baseImage: 'custom/foundry',
+          user: '500:500',
+          version_params: {
+            name: 'app-v{version}',
+            port: '400{version}',
+            versionDir: 'ver{version}'
+          }
+        },
+        versions: {
+          '13': { 
+            install: { systems: {}, modules: {} },
+            composition_params: { port: 9999 }
+          }
+        }
+      };
+      const opts = {};
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      const result = buildComposeFromContainerConfig(containerCfg, opts, secretsConf);
+      
+      expect(result.services['app-v13']).toBeDefined();
+      expect(result.services['app-v13'].image).toBe('custom/foundry:release');
+      expect(result.services['app-v13'].user).toBe('500:500');
+      expect(result.services['app-v13'].ports).toEqual(['9999:30000']);
+    });
+
+    test('handles environment overrides', () => {
+      const containerCfg = {
+        versions: { '12': { install: { systems: {}, modules: {} } } }
+      };
+      const opts = {
+        baseImage: 'override/foundry',
+        user: '2000:2000',
+        builderEnabled: false
+      };
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      const result = buildComposeFromContainerConfig(containerCfg, opts, secretsConf);
+      
+      expect(result.services['foundry-v12'].image).toBe('override/foundry:12');
+      expect(result.services['foundry-v12'].user).toBe('2000:2000');
+      expect(result.services.builder).toBeUndefined();
+    });
+
+    test('skips unsupported versions', () => {
+      const containerCfg = {
+        versions: { 
+          '13': { install: { systems: {}, modules: {} } },
+          '12': { supported: false, install: { systems: {}, modules: {} } }
+        }
+      };
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      const result = buildComposeFromContainerConfig(containerCfg, {}, secretsConf);
+      
+      expect(result.services['foundry-v13']).toBeDefined();
+      expect(result.services['foundry-v12']).toBeUndefined();
+    });
+
+    test('adds extra volumes and environment', () => {
+      const containerCfg = {
+        versions: {
+          '13': { 
+            install: { systems: {}, modules: {} },
+            composition_params: {
+              volumes_extra: ['./extra:/extra'],
+              environment: { CUSTOM_VAR: 'value' },
+              env_files: ['./custom.env']
+            }
+          }
+        }
+      };
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      const result = buildComposeFromContainerConfig(containerCfg, {}, secretsConf);
+      
+      const service = result.services['foundry-v13'];
+      expect(service.volumes).toContain('./extra:/extra');
+      expect(service.environment).toContain('CUSTOM_VAR=value');
+      expect(service.env_file).toContain('./custom.env');
+    });
+
+    test('handles environment as array', () => {
+      const containerCfg = {
+        versions: {
+          '13': { 
+            install: { systems: {}, modules: {} },
+            composition_params: {
+              environment: ['VAR1=value1', 'VAR2=value2']
+            }
+          }
+        }
+      };
+      const secretsConf = { topLevel: {}, serviceRef: [] };
+      
+      const result = buildComposeFromContainerConfig(containerCfg, {}, secretsConf);
+      
+      const service = result.services['foundry-v13'];
+      expect(service.environment).toContain('VAR1=value1');
+      expect(service.environment).toContain('VAR2=value2');
+    });
+  });
+
+  describe('main function', () => {
+    let originalArgv;
+    let originalStdout;
+    let originalExit;
+    let stdoutOutput;
+
+    beforeEach(() => {
+      originalArgv = process.argv;
+      originalStdout = process.stdout.write;
+      originalExit = process.exit;
+      stdoutOutput = '';
+      
+      // Mock stdout.write to capture output
+      process.stdout.write = jest.fn((str) => {
+        stdoutOutput += str;
+        return true;
+      });
+      
+      // Mock process.exit to prevent actual exits
+      process.exit = jest.fn();
+    });
+
+    afterEach(() => {
+      process.argv = originalArgv;
+      process.stdout.write = originalStdout;
+      process.exit = originalExit;
+    });
+
+    test('outputs to stdout when no output file specified', () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-main-'));
+      const cfgPath = path.join(tmp, 'container-config.json');
+      const cfg = {
+        systems: { s: { name: 'S', manifest: '', path: '/test.zip', install_at_startup: true } },
+        modules: { m: { name: 'M', manifest: 'https://example.com/test.json', path: '', install_at_startup: true } },
+        versions: { '13': { install: { systems: { s: {} }, modules: { m: {} } } } }
+      };
+      fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+      process.argv = ['node', 'script.js', '-c', cfgPath];
+      
+      main();
+      
+      expect(stdoutOutput).toContain('secrets:');
+      expect(stdoutOutput).toContain('services:');
+      expect(process.exit).not.toHaveBeenCalled();
+    });
+
+    test('writes to file when output file specified', () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-main-'));
+      const cfgPath = path.join(tmp, 'container-config.json');
+      const outPath = path.join(tmp, 'output.yml');
+      const cfg = {
+        systems: { s: { name: 'S', manifest: '', path: '/test.zip', install_at_startup: true } },
+        modules: { m: { name: 'M', manifest: 'https://example.com/test.json', path: '', install_at_startup: true } },
+        versions: { '13': { install: { systems: { s: {} }, modules: { m: {} } } } }
+      };
+      fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+      // Mock console.log to capture it
+      const originalConsoleLog = console.log;
+      let consoleOutput = '';
+      console.log = jest.fn((str) => { consoleOutput += str + '\n'; });
+
+      process.argv = ['node', 'script.js', '-c', cfgPath, '-o', outPath];
+      
+      main();
+      
+      expect(fs.existsSync(outPath)).toBe(true);
+      expect(consoleOutput).toContain(`Wrote ${path.resolve(outPath)}`);
+      
+      console.log = originalConsoleLog;
+    });
+  });
+
+  // Existing CLI integration tests...
+  describe('CLI integration', () => {
 
   test('uses templated top-level version_params when no per-version overrides', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
@@ -107,5 +480,107 @@ describe('scripts/generate-compose.js', () => {
     expect(output).toContain('[dry-run] Would generate compose YAML from config:');
     expect(output).toContain('[dry-run] Would write to: stdout');
     expect(output).toContain('[dry-run] Generated YAML size:');
+  });
+
+  test('handles environment variable overrides', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
+    const cfgPath = path.join(tmp, 'container-config.json');
+    const cfg = {
+      systems: { s: { name: 'S', manifest: '', path: '/test.zip', install_at_startup: true } },
+      modules: { m: { name: 'M', manifest: 'https://example.com/test.json', path: '', install_at_startup: true } },
+      versions: { '13': { install: { systems: { s: {} }, modules: { m: {} } } } }
+    };
+    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+    const output = runNode(`${scriptPath} --print -c ${cfgPath}`, {
+      env: { 
+        ...process.env,
+        COMPOSE_BASE_IMAGE: 'custom/foundry',
+        COMPOSE_USER: '1000:1000',
+        COMPOSE_BUILDER_ENABLED: '0'
+      }
+    });
+
+    const doc = yaml.load(output);
+    expect(doc.services['foundry-v13'].image).toBe('custom/foundry:release');
+    expect(doc.services['foundry-v13'].user).toBe('1000:1000');
+    expect(doc.services.builder).toBeUndefined();
+  });
+
+  test('handles secrets configuration', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
+    const cfgPath = path.join(tmp, 'container-config.json');
+    const cfg = {
+      systems: { s: { name: 'S', manifest: '', path: '/test.zip', install_at_startup: true } },
+      modules: { m: { name: 'M', manifest: 'https://example.com/test.json', path: '', install_at_startup: true } },
+      versions: { '13': { install: { systems: { s: {} }, modules: { m: {} } } } }
+    };
+    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+    const output = runNode(`${scriptPath} --print -c ${cfgPath} --secrets-mode external --secrets-external my_secret --secrets-target app.json`);
+    const doc = yaml.load(output);
+    
+    expect(doc.secrets.my_secret).toEqual({ external: true });
+    expect(doc.services['foundry-v13'].secrets).toEqual([{ source: 'my_secret', target: 'app.json' }]);
+  });
+
+  test('handles advanced compose config format', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
+    const cfgPath = path.join(tmp, 'compose-config.json');
+    const cfg = {
+      baseImage: 'advanced/foundry',
+      user: '500:500',
+      versions: [
+        {
+          name: 'foundry-advanced',
+          tag: 'beta',
+          port: 8080,
+          versionDir: 'advanced',
+          fetchStaggerSeconds: 10
+        }
+      ],
+      builder: { enabled: true, image: 'node:latest' }
+    };
+    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+    const output = runNode(`${scriptPath} --print -c ${cfgPath}`);
+    const doc = yaml.load(output);
+    
+    expect(doc.services['foundry-advanced']).toBeDefined();
+    expect(doc.services['foundry-advanced'].image).toBe('advanced/foundry:beta');
+    expect(doc.services['foundry-advanced'].ports).toEqual(['8080:30000']);
+    expect(doc.services.builder.image).toBe('node:latest');
+  });
+
+  test('exits with error for non-existent config file', () => {
+    expect(() => {
+      runNode(`${scriptPath} -c /non/existent/file.json`);
+    }).toThrow();
+  });
+
+  test('exits with error for invalid JSON', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
+    const cfgPath = path.join(tmp, 'invalid.json');
+    fs.writeFileSync(cfgPath, '{ invalid json }');
+
+    expect(() => {
+      runNode(`${scriptPath} -c ${cfgPath}`);
+    }).toThrow();
+  });
+
+  test('exits with error for invalid container config', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-gen-'));
+    const cfgPath = path.join(tmp, 'invalid-config.json');
+    const cfg = {
+      systems: { s: { name: 'S' } }, // Missing manifest or path
+      modules: {},
+      versions: { '13': {} } // Missing install
+    };
+    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+    expect(() => {
+      runNode(`${scriptPath} -c ${cfgPath}`);
+    }).toThrow();
+  });
   });
 });
