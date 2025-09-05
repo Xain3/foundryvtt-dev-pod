@@ -1,0 +1,24 @@
+[
+  {
+    "name": "scripts",
+    "match_mode": "prefix",
+    "match": "scripts/",
+    "min": {
+      "branches": 60,
+      "functions": 75,
+      "lines": 75,
+      "statements": 75
+    }
+  },
+  {
+    "name": "patches",
+    "match_mode": "prefix",
+    "match": "patches/",
+    "min": {
+      "branches": 60,
+      "functions": 75,
+      "lines": 75,
+      "statements": 72
+    }
+  }
+]
