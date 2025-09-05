@@ -1,7 +1,9 @@
-const { spawnSync } = require('node:child_process');
-const path = require('node:path');
-const fs = require('node:fs');
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../../../../');
 const commonDir = path.join(repoRoot, 'patches', 'common');
 const entrypointDir = path.join(repoRoot, 'patches', 'entrypoint');

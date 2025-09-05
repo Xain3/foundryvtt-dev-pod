@@ -1,8 +1,11 @@
-const path = require('node:path');
-const { runBashScript } = require('../../../utils/shell.js');
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { jest } from '@jest/globals';
+import { runBashScript } from '../../../utils/shell.js';
 
 jest.setTimeout(20000);
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // __dirname is .../tests/unit/patches/common; go up 4 levels to repo root
 const rootDir = path.resolve(__dirname, '../../../../');
 
