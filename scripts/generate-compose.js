@@ -440,7 +440,7 @@ function main() {
 		process.exit(1);
 	}
 	const cfg = JSON.parse(fs.readFileSync(absConf, 'utf8'));
-	
+
 	// Validate configuration if it looks like a container config
 	const looksLikeContainerConfig = cfg && typeof cfg === 'object' && cfg.systems && cfg.modules && cfg.versions && !Array.isArray(cfg.versions);
 	if (looksLikeContainerConfig) {
@@ -487,29 +487,21 @@ function main() {
 	}
 }
 
-// Export functions for testing
+// Export functions for testing (single definitive export object)
 module.exports = {
-	parseArgs,
-	resolveSecrets,
-	toEnvList,
-	resolveTemplatedString,
-	resolveTemplatedNumber,
-	buildComposeFromComposeConfig,
-	buildComposeFromContainerConfig,
-	main
+  parseArgs,
+  resolveSecrets,
+  retrieveGcpSecret,
+  retrieveAzureSecret,
+  retrieveAwsSecret,
+  toEnvList,
+  resolveTemplatedString,
+  resolveTemplatedNumber,
+  buildComposeFromComposeConfig,
+  buildComposeFromContainerConfig,
+  main
 };
 
 if (require.main === module) {
-	try { main(); } catch (e) { console.error(e?.stack || String(e)); process.exit(1); }
+  try { main(); } catch (e) { console.error(e?.stack || String(e)); process.exit(1); }
 }
-
-module.exports = {
-	parseArgs,
-	resolveSecrets,
-	retrieveGcpSecret,
-	retrieveAzureSecret,
-	retrieveAwsSecret,
-	buildComposeFromComposeConfig,
-	buildComposeFromContainerConfig,
-	main
-};
