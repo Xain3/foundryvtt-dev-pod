@@ -309,7 +309,10 @@ function buildComposeFromComposeConfig(config, secretsConf) {
 		const dir = v.versionDir;
 		if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
 
-		const image = `${config.baseImage || 'felddy/foundryvtt'}:${v.tag || 'release'}`;
+		// Prefer an explicit tag if provided; if tag is missing or empty,
+		// fall back to the numeric version directory when available.
+		const imageTag = (typeof v.tag === 'string' && v.tag !== '') ? v.tag : v.versionDir.replace(/^v/, '');
+		const image = `${config.baseImage || 'felddy/foundryvtt'}:${imageTag}`;
 		const user = v.user || config.user || '0:0';
 		const port = v.port || 30000;
 		const envSuffix = v.envSuffix || dir;
@@ -372,7 +375,12 @@ function buildComposeFromContainerConfig(containerCfg, opts = {}, secretsConf) {
 
 		const defName = resolveTemplatedString(vp.name, intVer) || `foundry-v${intVer}`;
 		const defDir = resolveTemplatedString(vp.versionDir, intVer) || `v${intVer}`;
-		const defTag = resolveTemplatedString(vp.tag, intVer) || (intVer >= 13 ? 'release' : `${intVer}`);
+		// If a tag template is provided, use it. If it's an empty string or missing,
+		// fall back to the numeric version string (e.g. '13'). Previously this
+		// defaulted to 'release' for >=13 which could be surprising when an
+		// explicit tag was omitted — prefer explicitness by using the version.
+		const resolvedTag = resolveTemplatedString(vp.tag, intVer);
+		const defTag = (typeof resolvedTag === 'string' && resolvedTag !== '') ? resolvedTag : `${intVer}`;
 		const defPort = resolveTemplatedNumber(vp.port, intVer) ?? (30000 + intVer);
 
 		const name = typeof cp.name === 'string' && cp.name ? cp.name : defName;
