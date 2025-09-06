@@ -12,7 +12,7 @@ Project layout (important files)
 - `helpers/`: JavaScript modules with core logic. Example: `helpers/config-validator.js` implements validation + caching used by `scripts/validate-config.js`.
 - `patches/`: Shell scripts and patch logic applied to containers. See `patches/README.md` for strategy and `entrypoint/` for ordering.
 - `tests/unit/`: Jest unit tests that mirror `helpers/` and some script behaviors.
-- `.github/`: CI helpers and coverage checks. See `.github/scripts/check-coverage.js` and `.github/constants/thresholds.json`.
+- `.github/`: CI helpers and coverage checks. See `.github/scripts/check-coverage.cjs` and `.github/constants/thresholds.json`.
 - `README.md` and `package.json`: canonical usage and required Node version (>=18).
 
 Development workflows (commands)

@@ -11,7 +11,7 @@ Merge `dev` into `master` to sync recent development changes.
 ## CI & Coverage
 
 - This PR will run the "PR Test & Coverage" workflow on push/PR.
-- Jest produces coverage and the per-folder gate is enforced by `.github/scripts/check-coverage.js`.
+- Jest produces coverage and the per-folder gate is enforced by `.github/scripts/check-coverage.cjs`.
 - Thresholds are defined in `.github/constants/thresholds.json` and can be tuned per directory (prefix or regex).
 
 ## How to verify locally

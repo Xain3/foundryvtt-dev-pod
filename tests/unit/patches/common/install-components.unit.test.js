@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { jest } from '@jest/globals';
 
 function runScriptWithStub({ cfg, dataDir }) {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'omh-patch-'));

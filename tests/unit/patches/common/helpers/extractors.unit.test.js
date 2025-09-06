@@ -1,15 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-
-// eslint-disable-next-line import/no-commonjs
-const extractors = require('../../../../../patches/common/helpers/extractors.mjs');
-const {
+import {
   extractTarBuffer,
   extractTar,
   extractTarGz,
   extractArchiveNode
-} = extractors;
+} from '../../../../../patches/common/helpers/extractors.mjs';
 
 function padToBlockSize(len, block = 512) {
   const pad = (block - (len % block)) % block;

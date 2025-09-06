@@ -8,6 +8,7 @@ import process from 'process';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 function parseArgs(argv) {
@@ -90,7 +91,6 @@ export async function smokeInstall(inputArgs = {}, inputEnv = {}) {
 
   const childEnv = { ...ENV, _FALLBACKS_JSON: JSON.stringify(FALLBACKS) };
   const { status, stderr } = await new Promise((resolve) => {
-    const { spawn } = require('node:child_process');
     const p = spawn(process.execPath, [harness], { env: childEnv });
     let er = Buffer.alloc(0);
     p.stderr.on('data', (d) => { er = Buffer.concat([er, d]); });

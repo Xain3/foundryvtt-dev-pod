@@ -1,8 +1,6 @@
-module.exports = {
+export default {
   testEnvironment: 'node',
-  transform: {
-    '^.+\\.m?js$': ['babel-jest', { configFile: './babel.config.cjs' }]
-  },
+  transform: {},
   moduleFileExtensions: ['js', 'mjs', 'json', 'node'],
   testPathIgnorePatterns: ['/node_modules/'],
   coverageDirectory: 'coverage',

@@ -5,7 +5,7 @@ This project enforces unit test coverage on pull requests using GitHub Actions a
 - Workflow: `.github/workflows/pr-test-coverage.yml`
 - Node version: 18
 - Test runner: Jest
-- Coverage: Jest `--coverage` + per-folder gating via `.github/scripts/check-coverage.js`
+- Coverage: Jest `--coverage` + per-folder gating via `.github/scripts/check-coverage.cjs`
 
 ## Threshold configuration
 
