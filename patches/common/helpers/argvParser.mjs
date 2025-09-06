@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * @file argvParser.mjs
+ * @description Parses command-line arguments for procedural number and patch name
+ * @path patches/common/helpers/argvParser.mjs
+ */
+
+/**
  * Parses command-line arguments for procedural number and patch name.
  *
  * @param {string} [defaultNumber="00"] - The default value for `--procedural-number` if not provided.
@@ -11,6 +17,7 @@
  *
  * @example
  * const { procNum, patchName, args } = parsePatchArgs("01", "myPatch");
+ * @export
  */
 export function parsePatchArgs(defaultNumber = "00", defaultName = "patch") {
 	const ARGS = process.argv.slice(2);

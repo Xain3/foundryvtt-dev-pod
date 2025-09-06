@@ -1,3 +1,9 @@
+/**
+ * @file extractors.mjs
+ * @description Utilities for extracting tar archives from buffers
+ * @path patches/common/helpers/extractors.mjs
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -13,6 +19,13 @@ function parseOctal(str) {
 	return m ? parseInt(m[0], 8) : 0;
 }
 
+/**
+ * Extract a tar archive from a buffer to a destination directory.
+ * @param {Buffer} buf - Buffer containing tar archive data
+ * @param {string} destDir - Destination directory path
+ * @returns {Promise<void>} Promise that resolves when extraction is complete
+ * @export
+ */
 export async function extractTarBuffer(buf, destDir) {
 	ensureDirSync(destDir);
 	let offset = 0;
@@ -46,6 +59,13 @@ export async function extractTarBuffer(buf, destDir) {
 	}
 }
 
+/**
+ * Extract a gzipped tar archive to a destination directory.
+ * @param {string} filePath - Path to the .tar.gz file
+ * @param {string} destDir - Destination directory path
+ * @returns {Promise<object>} Result object with success status
+ * @export
+ */
 export async function extractTarGz(filePath, destDir) {
 	const compressed = fs.readFileSync(filePath);
 	const buf = zlib.gunzipSync(compressed);
@@ -53,12 +73,29 @@ export async function extractTarGz(filePath, destDir) {
 	return { success: true };
 }
 
+/**
+ * Extract a tar archive to a destination directory.
+ * @param {string} filePath - Path to the .tar file
+ * @param {string} destDir - Destination directory path
+ * @returns {Promise<object>} Result object with success status
+ * @export
+ */
 export async function extractTar(filePath, destDir) {
 	const buf = fs.readFileSync(filePath);
 	await extractTarBuffer(buf, destDir);
 	return { success: true };
 }
 
+/**
+ * Extract various archive formats using Node.js built-in modules.
+ * @param {string} archivePath - Path to the archive file
+ * @param {string} destDir - Destination directory path
+ * @param {string} sourceName - Source name for format detection
+ * @param {object} options - Extraction options
+ * @param {boolean} options.debug - Enable debug logging (default: false)
+ * @returns {Promise<object>} Result object with success/error status
+ * @export
+ */
 export async function extractArchiveNode(archivePath, destDir, sourceName, { debug = false } = {}) {
 	const lower = (sourceName || archivePath).toLowerCase();
 	if (/(\.tar\.gz|\.tgz)$/.test(lower)) {

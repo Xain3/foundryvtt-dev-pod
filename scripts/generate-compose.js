@@ -124,372 +124,372 @@ import yaml from 'js-yaml';
 import { validateConfig } from './validate-config.js';
 
 function parseArgs(argv) {
-	const args = {
-		config: 'container-config.json',
-		out: '',
-		dryRun: false,
-		secretsMode: process.env.COMPOSE_SECRETS_MODE || 'auto',
-		secretsFile: process.env.COMPOSE_SECRETS_FILE || './secrets.json',
-		secretsExternalName: process.env.COMPOSE_SECRETS_EXTERNAL_NAME || '',
-		secretsTarget: process.env.COMPOSE_SECRETS_TARGET || 'config.json',
-		secretsGcpProject: process.env.COMPOSE_SECRETS_GCP_PROJECT || '',
-		secretsGcpSecret: process.env.COMPOSE_SECRETS_GCP_SECRET || '',
-		secretsAzureVault: process.env.COMPOSE_SECRETS_AZURE_VAULT || '',
-		secretsAzureSecret: process.env.COMPOSE_SECRETS_AZURE_SECRET || '',
-		secretsAwsRegion: process.env.COMPOSE_SECRETS_AWS_REGION || '',
-		secretsAwsSecret: process.env.COMPOSE_SECRETS_AWS_SECRET || '',
-	};
-	for (let i = 2; i < argv.length; i++) {
-		const a = argv[i];
-		if ((a === '-c' || a === '--config') && argv[i + 1]) {
-			args.config = argv[++i];
-		} else if ((a === '-o' || a === '--out') && argv[i + 1]) {
-			args.out = argv[++i];
-		} else if (a === '--print') {
-			args.out = '';
-		} else if (a === '--dry-run' || a === '-n') {
-			args.dryRun = true;
-		} else if (a === '--secrets-mode' && argv[i + 1]) {
-			args.secretsMode = argv[++i];
-		} else if (a === '--secrets-file' && argv[i + 1]) {
-			args.secretsFile = argv[++i];
-		} else if (a === '--secrets-external' && argv[i + 1]) {
-			args.secretsExternalName = argv[++i];
-		} else if (a === '--secrets-target' && argv[i + 1]) {
-			args.secretsTarget = argv[++i];
-		} else if (a === '--secrets-gcp-project' && argv[i + 1]) {
-			args.secretsGcpProject = argv[++i];
-		} else if (a === '--secrets-gcp-secret' && argv[i + 1]) {
-			args.secretsGcpSecret = argv[++i];
-		} else if (a === '--secrets-azure-vault' && argv[i + 1]) {
-			args.secretsAzureVault = argv[++i];
-		} else if (a === '--secrets-azure-secret' && argv[i + 1]) {
-			args.secretsAzureSecret = argv[++i];
-		} else if (a === '--secrets-aws-region' && argv[i + 1]) {
-			args.secretsAwsRegion = argv[++i];
-		} else if (a === '--secrets-aws-secret' && argv[i + 1]) {
-			args.secretsAwsSecret = argv[++i];
-		}
-	}
-	return args;
+  const args = {
+    config: 'container-config.json',
+    out: '',
+    dryRun: false,
+    secretsMode: process.env.COMPOSE_SECRETS_MODE || 'auto',
+    secretsFile: process.env.COMPOSE_SECRETS_FILE || './secrets.json',
+    secretsExternalName: process.env.COMPOSE_SECRETS_EXTERNAL_NAME || '',
+    secretsTarget: process.env.COMPOSE_SECRETS_TARGET || 'config.json',
+    secretsGcpProject: process.env.COMPOSE_SECRETS_GCP_PROJECT || '',
+    secretsGcpSecret: process.env.COMPOSE_SECRETS_GCP_SECRET || '',
+    secretsAzureVault: process.env.COMPOSE_SECRETS_AZURE_VAULT || '',
+    secretsAzureSecret: process.env.COMPOSE_SECRETS_AZURE_SECRET || '',
+    secretsAwsRegion: process.env.COMPOSE_SECRETS_AWS_REGION || '',
+    secretsAwsSecret: process.env.COMPOSE_SECRETS_AWS_SECRET || '',
+  };
+  for (let i = 2; i < argv.length; i++) {
+    const a = argv[i];
+    if ((a === '-c' || a === '--config') && argv[i + 1]) {
+      args.config = argv[++i];
+    } else if ((a === '-o' || a === '--out') && argv[i + 1]) {
+      args.out = argv[++i];
+    } else if (a === '--print') {
+      args.out = '';
+    } else if (a === '--dry-run' || a === '-n') {
+      args.dryRun = true;
+    } else if (a === '--secrets-mode' && argv[i + 1]) {
+      args.secretsMode = argv[++i];
+    } else if (a === '--secrets-file' && argv[i + 1]) {
+      args.secretsFile = argv[++i];
+    } else if (a === '--secrets-external' && argv[i + 1]) {
+      args.secretsExternalName = argv[++i];
+    } else if (a === '--secrets-target' && argv[i + 1]) {
+      args.secretsTarget = argv[++i];
+    } else if (a === '--secrets-gcp-project' && argv[i + 1]) {
+      args.secretsGcpProject = argv[++i];
+    } else if (a === '--secrets-gcp-secret' && argv[i + 1]) {
+      args.secretsGcpSecret = argv[++i];
+    } else if (a === '--secrets-azure-vault' && argv[i + 1]) {
+      args.secretsAzureVault = argv[++i];
+    } else if (a === '--secrets-azure-secret' && argv[i + 1]) {
+      args.secretsAzureSecret = argv[++i];
+    } else if (a === '--secrets-aws-region' && argv[i + 1]) {
+      args.secretsAwsRegion = argv[++i];
+    } else if (a === '--secrets-aws-secret' && argv[i + 1]) {
+      args.secretsAwsSecret = argv[++i];
+    }
+  }
+  return args;
 }
 
-let __secretTempCounter = 0;
+let secretTempCounter = 0;
 function nextTempId() {
-	const now = Date.now();
-	// Increment counter to avoid collisions when called multiple times within the same ms
-	__secretTempCounter = (__secretTempCounter + 1) & 0xffff; // keep it bounded
-	// Only digits to satisfy existing test regex expectations
-	return `${now}${__secretTempCounter}`;
+  const now = Date.now();
+  // Increment counter to avoid collisions when called multiple times within the same ms
+  secretTempCounter = (secretTempCounter + 1) & 0xffff; // keep it bounded
+  // Only digits to satisfy existing test regex expectations
+  return `${now}${secretTempCounter}`;
 }
 
 function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveAzureSecretFn = retrieveAzureSecret, retrieveAwsSecretFn = retrieveAwsSecret) {
-	const mode = (opts.secretsMode || 'auto').toLowerCase();
+  const mode = (opts.secretsMode || 'auto').toLowerCase();
 
-	if (mode === 'none') {
-		return { topLevel: {}, serviceRef: [] };
-	}
+  if (mode === 'none') {
+    return { topLevel: {}, serviceRef: [] };
+  }
 
-	if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
-		const name = opts.secretsExternalName || 'config_json';
-		return {
-			topLevel: { [name]: { external: true } },
-			serviceRef: [ { source: name, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+  if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
+    const name = opts.secretsExternalName || 'config_json';
+    return {
+      topLevel: { [name]: { external: true } },
+      serviceRef: [ { source: name, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
 
-	if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
-		console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
-		const secretName = 'config_json_gcp';
-		const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
+  if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
+    console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
+    const secretName = 'config_json_gcp';
+    const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
 
-		// Create a temporary file with the GCP secret content
-		try {
-			const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
-			fs.writeFileSync(gcpSecretFile, secretContent, 'utf8');
-		} catch (error) {
-			throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
-		}
+    // Create a temporary file with the GCP secret content
+    try {
+      const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
+      fs.writeFileSync(gcpSecretFile, secretContent, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
+    }
 
-		return {
-			topLevel: { [secretName]: { file: gcpSecretFile } },
-			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+    return {
+      topLevel: { [secretName]: { file: gcpSecretFile } },
+      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
 
-	if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
-		console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
-		const secretName = 'config_json_azure';
-		const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
+  if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
+    console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
+    const secretName = 'config_json_azure';
+    const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
 
-		// Create a temporary file with the Azure secret content
-		try {
-			const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
-			fs.writeFileSync(azureSecretFile, secretContent, 'utf8');
-		} catch (error) {
-			throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
-		}
+    // Create a temporary file with the Azure secret content
+    try {
+      const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
+      fs.writeFileSync(azureSecretFile, secretContent, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
+    }
 
-		return {
-			topLevel: { [secretName]: { file: azureSecretFile } },
-			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+    return {
+      topLevel: { [secretName]: { file: azureSecretFile } },
+      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
 
-	if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
-		console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
-		const secretName = 'config_json_aws';
-		const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
+  if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
+    console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
+    const secretName = 'config_json_aws';
+    const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
 
-		// Create a temporary file with the AWS secret content
-		try {
-			const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
-			fs.writeFileSync(awsSecretFile, secretContent, 'utf8');
-		} catch (error) {
-			throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
-		}
+    // Create a temporary file with the AWS secret content
+    try {
+      const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
+      fs.writeFileSync(awsSecretFile, secretContent, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
+    }
 
-		return {
-			topLevel: { [secretName]: { file: awsSecretFile } },
-			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+    return {
+      topLevel: { [secretName]: { file: awsSecretFile } },
+      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
 
-	return {
-		topLevel: { config_json: { file: opts.secretsFile || './secrets.json' } },
-		serviceRef: [ { source: 'config_json', target: opts.secretsTarget || 'config.json' } ],
-	};
+  return {
+    topLevel: { config_json: { file: opts.secretsFile || './secrets.json' } },
+    serviceRef: [ { source: 'config_json', target: opts.secretsTarget || 'config.json' } ],
+  };
 }
 
 function retrieveGcpSecret(project, secretName) {
-	const gcpCommand = `gcloud secrets versions access latest --secret="${secretName}" --project="${project}"`;
-	return execSync(gcpCommand, { encoding: 'utf8' });
+  const gcpCommand = `gcloud secrets versions access latest --secret="${secretName}" --project="${project}"`;
+  return execSync(gcpCommand, { encoding: 'utf8' });
 }
 
 function retrieveAzureSecret(vaultName, secretName) {
-	const azureCommand = `az keyvault secret show --vault-name "${vaultName}" --name "${secretName}" --query value --output tsv`;
-	return execSync(azureCommand, { encoding: 'utf8' });
+  const azureCommand = `az keyvault secret show --vault-name "${vaultName}" --name "${secretName}" --query value --output tsv`;
+  return execSync(azureCommand, { encoding: 'utf8' });
 }
 
 function retrieveAwsSecret(region, secretName) {
-	const awsCommand = `aws secretsmanager get-secret-value --region "${region}" --secret-id "${secretName}" --query SecretString --output text`;
-	return execSync(awsCommand, { encoding: 'utf8' });
+  const awsCommand = `aws secretsmanager get-secret-value --region "${region}" --secret-id "${secretName}" --query SecretString --output text`;
+  return execSync(awsCommand, { encoding: 'utf8' });
 }
 
 function toEnvList(envObjOrNumber) {
-	if (envObjOrNumber && typeof envObjOrNumber === 'object' && !Array.isArray(envObjOrNumber)) {
-		return Object.entries(envObjOrNumber).map(([k, v]) => `${k}=${v}`);
-	}
-	return [];
+  if (envObjOrNumber && typeof envObjOrNumber === 'object' && !Array.isArray(envObjOrNumber)) {
+    return Object.entries(envObjOrNumber).map(([k, v]) => `${k}=${v}`);
+  }
+  return [];
 }
 
 function resolveTemplatedString(template, version) {
-	if (typeof template !== 'string') return undefined;
-	return template.replaceAll('{version}', String(version));
+  if (typeof template !== 'string') return undefined;
+  return template.replaceAll('{version}', String(version));
 }
 
 function resolveTemplatedNumber(value, version) {
-	if (typeof value === 'number') return value;
-	if (typeof value === 'string') {
-		const s = value.replaceAll('{version}', String(version));
-		const n = Number(s);
-		if (!Number.isNaN(n)) return n;
-	}
-	return undefined;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const s = value.replaceAll('{version}', String(version));
+    const n = Number(s);
+    if (!Number.isNaN(n)) return n;
+  }
+  return undefined;
 }
 
 function buildComposeFromComposeConfig(config, secretsConf) {
-	const secrets = secretsConf.topLevel || {};
+  const secrets = secretsConf.topLevel || {};
 
-	const volumes = {};
-	const services = {};
+  const volumes = {};
+  const services = {};
 
-	for (const v of config.versions || []) {
-		const name = v.name;
-		const dir = v.versionDir;
-		if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
+  for (const v of config.versions || []) {
+    const name = v.name;
+    const dir = v.versionDir;
+    if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
 
-		const image = `${config.baseImage || 'felddy/foundryvtt'}:${v.tag || 'release'}`;
-		const user = v.user || config.user || '0:0';
-		const port = v.port || 30000;
-		const envSuffix = v.envSuffix || dir;
-		const fetchStagger = v.fetchStaggerSeconds ?? 0;
+    const image = `${config.baseImage || 'felddy/foundryvtt'}:${v.tag || 'release'}`;
+    const user = v.user || config.user || '0:0';
+    const port = v.port || 30000;
+    const envSuffix = v.envSuffix || dir;
+    const fetchStagger = v.fetchStaggerSeconds ?? 0;
 
-		volumes[`${name}-data`] = null;
+    volumes[`${name}-data`] = null;
 
-		services[name] = {
-			image,
-			container_name: name,
-			hostname: name,
-			user: `${user}`,
-			ports: [ `${port}:30000` ],
-			volumes: [
-				`${name}-data:/data`,
-				{ type: 'bind', source: './container-config.json', target: '/config/container-config.json', read_only: true },
-				{ type: 'bind', source: './dist', target: '/host/dist', read_only: true },
-				{ type: 'bind', source: './patches', target: '/container_patches' },
-				{ type: 'bind', source: `./shared/${dir}`, target: '/host/shared', read_only: false },
-				{ type: 'bind', source: `./resources/${dir}`, target: '/host/resources', read_only: true },
-				{ type: 'bind', source: `./foundry-cache/${dir}`, target: '/data/container_cache' },
-			],
-			secrets: secretsConf.serviceRef || [],
-			env_file: [ './env/.env', `./env/.${envSuffix}.env` ],
-			environment: [ `FETCH_STAGGER_SECONDS=${fetchStagger}` ],
-		};
-	}
+    services[name] = {
+      image,
+      container_name: name,
+      hostname: name,
+      user: `${user}`,
+      ports: [ `${port}:30000` ],
+      volumes: [
+        `${name}-data:/data`,
+        { type: 'bind', source: './container-config.json', target: '/config/container-config.json', read_only: true },
+        { type: 'bind', source: './dist', target: '/host/dist', read_only: true },
+        { type: 'bind', source: './patches', target: '/container_patches' },
+        { type: 'bind', source: `./shared/${dir}`, target: '/host/shared', read_only: false },
+        { type: 'bind', source: `./resources/${dir}`, target: '/host/resources', read_only: true },
+        { type: 'bind', source: `./foundry-cache/${dir}`, target: '/data/container_cache' },
+      ],
+      secrets: secretsConf.serviceRef || [],
+      env_file: [ './env/.env', `./env/.${envSuffix}.env` ],
+      environment: [ `FETCH_STAGGER_SECONDS=${fetchStagger}` ],
+    };
+  }
 
-	if (config.builder?.enabled !== false) {
-		services['builder'] = {
-			image: (config.builder && config.builder.image) || 'node:20-alpine',
-			container_name: 'module-builder',
-			working_dir: '/work',
-			command: 'sh -c "npm ci && npx vite build --watch"',
-			volumes: [ '../:/work' ],
-			restart: 'unless-stopped',
-		};
-	}
+  if (config.builder?.enabled !== false) {
+    services['builder'] = {
+      image: (config.builder && config.builder.image) || 'node:20-alpine',
+      container_name: 'module-builder',
+      working_dir: '/work',
+      command: 'sh -c "npm ci && npx vite build --watch"',
+      volumes: [ '../:/work' ],
+      restart: 'unless-stopped',
+    };
+  }
 
-	return { secrets, volumes, services };
+  return { secrets, volumes, services };
 }
 
 function buildComposeFromContainerConfig(containerCfg, opts = {}, secretsConf) {
-	const secrets = secretsConf.topLevel || {};
-	const volumes = {};
-	const services = {};
+  const secrets = secretsConf.topLevel || {};
+  const volumes = {};
+  const services = {};
 
-	const comp = containerCfg.composition || {};
-	const baseImage = opts.baseImage || comp.baseImage || 'felddy/foundryvtt';
-	const user = opts.user || comp.user || '0:0';
-	const vp = comp.version_params || {};
+  const comp = containerCfg.composition || {};
+  const baseImage = opts.baseImage || comp.baseImage || 'felddy/foundryvtt';
+  const user = opts.user || comp.user || '0:0';
+  const vp = comp.version_params || {};
 
-	const versions = containerCfg.versions || {};
-	for (const [ver, conf] of Object.entries(versions)) {
-		const supported = conf?.supported !== false;
-		if (!supported) continue;
-		const intVer = parseInt(ver, 10);
-		if (Number.isNaN(intVer)) continue;
-		const cp = conf.composition_params || {};
+  const versions = containerCfg.versions || {};
+  for (const [ver, conf] of Object.entries(versions)) {
+    const supported = conf?.supported !== false;
+    if (!supported) continue;
+    const intVer = parseInt(ver, 10);
+    if (Number.isNaN(intVer)) continue;
+    const cp = conf.composition_params || {};
 
-		const defName = resolveTemplatedString(vp.name, intVer) || `foundry-v${intVer}`;
-		const defDir = resolveTemplatedString(vp.versionDir, intVer) || `v${intVer}`;
-		const defTag = resolveTemplatedString(vp.tag, intVer) || (intVer >= 13 ? 'release' : `${intVer}`);
-		const defPort = resolveTemplatedNumber(vp.port, intVer) ?? (30000 + intVer);
+    const defName = resolveTemplatedString(vp.name, intVer) || `foundry-v${intVer}`;
+    const defDir = resolveTemplatedString(vp.versionDir, intVer) || `v${intVer}`;
+    const defTag = resolveTemplatedString(vp.tag, intVer) || (intVer >= 13 ? 'release' : `${intVer}`);
+    const defPort = resolveTemplatedNumber(vp.port, intVer) ?? (30000 + intVer);
 
-		const name = typeof cp.name === 'string' && cp.name ? cp.name : defName;
-		const dir = typeof cp.versionDir === 'string' && cp.versionDir ? cp.versionDir : defDir;
-		const tag = typeof cp.tag === 'string' && cp.tag ? cp.tag : defTag;
-		const port = typeof cp.port === 'number' ? cp.port : defPort;
-		const envSuffix = typeof cp.envSuffix === 'string' && cp.envSuffix ? cp.envSuffix : dir;
-		const stagger = typeof cp.fetchStaggerSeconds === 'number' ? cp.fetchStaggerSeconds : (intVer >= 13 ? 4 : intVer === 12 ? 2 : 0);
+    const name = typeof cp.name === 'string' && cp.name ? cp.name : defName;
+    const dir = typeof cp.versionDir === 'string' && cp.versionDir ? cp.versionDir : defDir;
+    const tag = typeof cp.tag === 'string' && cp.tag ? cp.tag : defTag;
+    const port = typeof cp.port === 'number' ? cp.port : defPort;
+    const envSuffix = typeof cp.envSuffix === 'string' && cp.envSuffix ? cp.envSuffix : dir;
+    const stagger = typeof cp.fetchStaggerSeconds === 'number' ? cp.fetchStaggerSeconds : (intVer >= 13 ? 4 : intVer === 12 ? 2 : 0);
 
-		volumes[`${name}-data`] = null;
-		const baseService = {
-			image: `${baseImage}:${tag}`,
-			container_name: name,
-			hostname: name,
-			user: `${user}`,
-			ports: [ `${port}:30000` ],
-			volumes: [
-				`${name}-data:/data`,
-				{ type: 'bind', source: './container-config.json', target: '/config/container-config.json', read_only: true },
-				{ type: 'bind', source: './dist', target: '/host/dist', read_only: true },
-				{ type: 'bind', source: './patches', target: '/container_patches' },
-				{ type: 'bind', source: `./shared/${dir}`, target: '/host/shared', read_only: false },
-				{ type: 'bind', source: `./resources/${dir}`, target: '/host/resources', read_only: true },
-				{ type: 'bind', source: `./foundry-cache/${dir}`, target: '/data/container_cache' }
-			],
-			secrets: secretsConf.serviceRef || [],
-			env_file: [ './env/.env', `./env/.${envSuffix}.env` ],
-			environment: [ `FETCH_STAGGER_SECONDS=${stagger}` ],
-		};
+    volumes[`${name}-data`] = null;
+    const baseService = {
+      image: `${baseImage}:${tag}`,
+      container_name: name,
+      hostname: name,
+      user: `${user}`,
+      ports: [ `${port}:30000` ],
+      volumes: [
+        `${name}-data:/data`,
+        { type: 'bind', source: './container-config.json', target: '/config/container-config.json', read_only: true },
+        { type: 'bind', source: './dist', target: '/host/dist', read_only: true },
+        { type: 'bind', source: './patches', target: '/container_patches' },
+        { type: 'bind', source: `./shared/${dir}`, target: '/host/shared', read_only: false },
+        { type: 'bind', source: `./resources/${dir}`, target: '/host/resources', read_only: true },
+        { type: 'bind', source: `./foundry-cache/${dir}`, target: '/data/container_cache' }
+      ],
+      secrets: secretsConf.serviceRef || [],
+      env_file: [ './env/.env', `./env/.${envSuffix}.env` ],
+      environment: [ `FETCH_STAGGER_SECONDS=${stagger}` ],
+    };
 
-		if (Array.isArray(cp.env_files) && cp.env_files.length) {
-			baseService.env_file = [...baseService.env_file, ...cp.env_files];
-		}
-		if (cp.environment) {
-			if (Array.isArray(cp.environment)) {
-				baseService.environment = [...baseService.environment, ...cp.environment];
-			} else if (typeof cp.environment === 'object') {
-				baseService.environment = [...baseService.environment, ...toEnvList(cp.environment)];
-			}
-		}
-		if (Array.isArray(cp.volumes_extra) && cp.volumes_extra.length) {
-			baseService.volumes = [...baseService.volumes, ...cp.volumes_extra];
-		}
+    if (Array.isArray(cp.env_files) && cp.env_files.length) {
+      baseService.env_file = [...baseService.env_file, ...cp.env_files];
+    }
+    if (cp.environment) {
+      if (Array.isArray(cp.environment)) {
+        baseService.environment = [...baseService.environment, ...cp.environment];
+      } else if (typeof cp.environment === 'object') {
+        baseService.environment = [...baseService.environment, ...toEnvList(cp.environment)];
+      }
+    }
+    if (Array.isArray(cp.volumes_extra) && cp.volumes_extra.length) {
+      baseService.volumes = [...baseService.volumes, ...cp.volumes_extra];
+    }
 
-		services[name] = baseService;
-	}
+    services[name] = baseService;
+  }
 
-	const builderEnabledDefault = comp.builder?.enabled !== false;
-	const builderImageDefault = comp.builder?.image || 'node:20-alpine';
-	if (opts.builderEnabled !== false && builderEnabledDefault !== false) {
-		services['builder'] = {
-			image: opts.builderImage || builderImageDefault,
-			container_name: 'module-builder',
-			working_dir: '/work',
-			command: 'sh -c "npm ci && npx vite build --watch"',
-			volumes: [ '../:/work' ],
-			restart: 'unless-stopped',
-		};
-	}
+  const builderEnabledDefault = comp.builder?.enabled !== false;
+  const builderImageDefault = comp.builder?.image || 'node:20-alpine';
+  if (opts.builderEnabled !== false && builderEnabledDefault !== false) {
+    services['builder'] = {
+      image: opts.builderImage || builderImageDefault,
+      container_name: 'module-builder',
+      working_dir: '/work',
+      command: 'sh -c "npm ci && npx vite build --watch"',
+      volumes: [ '../:/work' ],
+      restart: 'unless-stopped',
+    };
+  }
 
-	return { secrets, volumes, services };
+  return { secrets, volumes, services };
 }
 
 function main() {
-	const args = parseArgs(process.argv);
-	const { config: confPath, out, dryRun } = args;
-	const absConf = path.resolve(confPath);
-	if (!fs.existsSync(absConf)) {
-		console.error(`Config file not found: ${absConf}`);
-		process.exit(1);
-	}
-	const cfg = JSON.parse(fs.readFileSync(absConf, 'utf8'));
+  const args = parseArgs(process.argv);
+  const { config: confPath, out, dryRun } = args;
+  const absConf = path.resolve(confPath);
+  if (!fs.existsSync(absConf)) {
+    console.error(`Config file not found: ${absConf}`);
+    process.exit(1);
+  }
+  const cfg = JSON.parse(fs.readFileSync(absConf, 'utf8'));
 
-	// Validate configuration if it looks like a container config
-	const looksLikeContainerConfig = cfg && typeof cfg === 'object' && cfg.systems && cfg.modules && cfg.versions && !Array.isArray(cfg.versions);
-	if (looksLikeContainerConfig) {
-		const validationResult = validateConfig(absConf);
-		if (!validationResult.valid) {
-			console.error('Configuration validation failed:');
-			validationResult.errors.forEach(error => {
-				console.error(`  ${error}`);
-			});
-			process.exit(1);
-		}
-	}
-	const secretsConf = resolveSecrets(args);
-	let compose;
-	if (looksLikeContainerConfig) {
-		compose = buildComposeFromContainerConfig(cfg, {
-			baseImage: process.env.COMPOSE_BASE_IMAGE,
-			user: process.env.COMPOSE_USER,
-			builderEnabled: process.env.COMPOSE_BUILDER_ENABLED !== '0',
-			builderImage: process.env.COMPOSE_BUILDER_IMAGE,
-		}, secretsConf);
-	} else {
-		compose = buildComposeFromComposeConfig(cfg, secretsConf);
-	}
-	const yml = yaml.dump(compose, { noRefs: true, lineWidth: 120 });
+  // Validate configuration if it looks like a container config
+  const looksLikeContainerConfig = cfg && typeof cfg === 'object' && cfg.systems && cfg.modules && cfg.versions && !Array.isArray(cfg.versions);
+  if (looksLikeContainerConfig) {
+    const validationResult = validateConfig(absConf);
+    if (!validationResult.valid) {
+      console.error('Configuration validation failed:');
+      validationResult.errors.forEach(error => {
+        console.error(`  ${error}`);
+      });
+      process.exit(1);
+    }
+  }
+  const secretsConf = resolveSecrets(args);
+  let compose;
+  if (looksLikeContainerConfig) {
+    compose = buildComposeFromContainerConfig(cfg, {
+      baseImage: process.env.COMPOSE_BASE_IMAGE,
+      user: process.env.COMPOSE_USER,
+      builderEnabled: process.env.COMPOSE_BUILDER_ENABLED !== '0',
+      builderImage: process.env.COMPOSE_BUILDER_IMAGE,
+    }, secretsConf);
+  } else {
+    compose = buildComposeFromComposeConfig(cfg, secretsConf);
+  }
+  const yml = yaml.dump(compose, { noRefs: true, lineWidth: 120 });
 
-		if (dryRun) {
-			console.log('[dry-run] Would generate compose YAML from config:', absConf);
-			if (out) {
-				const absOut = path.resolve(out);
-				console.log(`[dry-run] Would write to: ${absOut}`);
-			} else {
-				console.log('[dry-run] Would write to: stdout');
-			}
-			console.log(`[dry-run] Generated YAML size: ${yml.length} characters`);
-			return;
-		}
-	if (out) {
-		const absOut = path.resolve(out);
-		fs.writeFileSync(absOut, yml, 'utf8');
-		console.log(`Wrote ${absOut}`);
-	} else {
-		process.stdout.write(yml);
-	}
+    if (dryRun) {
+      console.log('[dry-run] Would generate compose YAML from config:', absConf);
+      if (out) {
+        const absOut = path.resolve(out);
+        console.log(`[dry-run] Would write to: ${absOut}`);
+      } else {
+        console.log('[dry-run] Would write to: stdout');
+      }
+      console.log(`[dry-run] Generated YAML size: ${yml.length} characters`);
+      return;
+    }
+  if (out) {
+    const absOut = path.resolve(out);
+    fs.writeFileSync(absOut, yml, 'utf8');
+    console.log(`Wrote ${absOut}`);
+  } else {
+    process.stdout.write(yml);
+  }
 }
 
 // Export functions for testing (single definitive export object)

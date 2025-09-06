@@ -1,4 +1,10 @@
 /**
+ * @file cache.mjs
+ * @description Cache and change-detection utilities for patch scripts
+ * @path patches/common/helpers/cache.mjs
+ */
+
+/**
  * Cache and change-detection utilities for patch scripts.
  */
 import fs from "node:fs";
@@ -9,6 +15,12 @@ import https from "node:https";
 
 function ensureDirSync(dir) { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); }
 
+/**
+ * Calculate SHA256 hash of a file.
+ * @param {string} filePath - Path to the file to hash
+ * @returns {string} Hex-encoded SHA256 hash
+ * @export
+ */
 export function sha256File(filePath) {
 	const hash = crypto.createHash("sha256");
 	const data = fs.readFileSync(filePath);
@@ -16,6 +28,19 @@ export function sha256File(filePath) {
 	return hash.digest("hex");
 }
 
+/**
+ * Fetch a URL with automatic retries and redirect handling.
+ * @param {string} url - URL to fetch
+ * @param {object} opts - HTTP request options
+ * @param {object} options - Retry and timeout configuration
+ * @param {number} options.retries - Number of retries (default: 3)
+ * @param {number} options.baseDelayMs - Base delay between retries (default: 500)
+ * @param {boolean} options.debug - Enable debug logging (default: false)
+ * @param {number} options.maxRedirects - Maximum redirects to follow (default: 5)
+ * @param {number} options.timeoutMs - Request timeout in milliseconds (default: 15000)
+ * @returns {Promise<http.IncomingMessage>} HTTP response object
+ * @export
+ */
 export async function fetchWithRetry(url, opts = {}, { retries = 3, baseDelayMs = 500, debug = false, maxRedirects = 5, timeoutMs = 15000 } = {}) {
 	let lastErr;
 	for (let attempt = 0; attempt <= retries; attempt++) {
@@ -59,6 +84,13 @@ export async function fetchWithRetry(url, opts = {}, { retries = 3, baseDelayMs 
 
 function keyHash(key) { return crypto.createHash("sha1").update(key).digest("hex"); }
 
+/**
+ * Read cache metadata for a given URL.
+ * @param {string} cacheDir - Cache directory path
+ * @param {string} url - URL to read metadata for
+ * @returns {object|null} Metadata object or null if not found
+ * @export
+ */
 export function readMetaForUrl(cacheDir, url) {
 	const metaPath = path.join(cacheDir, `${keyHash(url)}.meta.json`);
 	if (fs.existsSync(metaPath)) { try { return JSON.parse(fs.readFileSync(metaPath, "utf8")); } catch { return null; } }
@@ -79,6 +111,18 @@ function writeMetaForKey(cacheDir, key, meta) {
 	fs.renameSync(tmp, metaPath);
 }
 
+/**
+ * Fetch a file to cache with HTTP validation (ETags/Last-Modified).
+ * @param {string} url - URL to fetch
+ * @param {string} cacheDir - Cache directory path
+ * @param {object} options - Fetch options
+ * @param {boolean} options.dryRun - Enable dry-run mode (default: false)
+ * @param {boolean} options.debug - Enable debug logging (default: false)
+ * @param {string} options.cacheMode - Cache mode: 'revalidate' or 'bust' (default: 'revalidate')
+ * @param {object} etagMeta - Existing ETag metadata for validation
+ * @returns {Promise<object>} Result object with success, path, fromCache, status, etc.
+ * @export
+ */
 export async function fetchToFileWithCache(url, cacheDir, { dryRun = false, debug = false, cacheMode = 'revalidate' } = {}, etagMeta) {
 	ensureDirSync(cacheDir);
 	const base = keyHash(url);
@@ -129,6 +173,10 @@ export async function fetchToFileWithCache(url, cacheDir, { dryRun = false, debu
 	return { success: true, path: filePath, fromCache: false, status: 200, etag, lastModified };
 }
 
+/**
+ * Advanced cache manager with download and validation capabilities.
+ * @export
+ */
 export class CacheManager {
 	constructor(cacheDir, { dryRun = false, debug = false, cacheMode = 'revalidate', checksumMode = 'auto', checksumThresholdBytes = 209715200, dirMaxFiles = 10000 } = {}) {
 		this.cacheDir = cacheDir;
