@@ -1,0 +1,46 @@
+# Purpose: `constants.yaml`
+# - Contains authoritative, code-level constants and capability definitions.
+# - Intended for values that define program behavior, validation, and
+#   protocol/namespace-level names which should not be changed casually.
+# - Examples: provider suffixes, supported secret modes, canonical paths.
+#
+# Note: Tunable runtime defaults (CLI fallbacks, service defaults, or
+# environment-specific tuning) belong in `defaults.yaml`.
+# The project treats constants as authoritative; move values only with care.
+
+# The following constant is used only for testing purposes
+testConstant: "testValue" # DO NOT CHANGE THIS VALUE
+
+# Compose generation constants migrated from inline script definitions
+generateCompose:
+  basePort: 30000
+  defaultUser: "0:0"
+  fetchStaggerEnv: "FETCH_STAGGER_SECONDS"
+  versionPlaceholder: "{version}"
+  defaultSecretTarget: "config.json"
+  secretBaseName: "config_json"
+  secretProviderSuffix:
+    gcp: "gcp"
+    azure: "azure"
+    aws: "aws"
+  secretModes:
+    - file
+    - external
+    - gcp
+    - azure
+    - aws
+    - none
+    - auto
+  paths:
+    configFileSource: "./container-config.json"
+    configFileTarget: "/config/container-config.json"
+    distSource: "./dist"
+    distTarget: "/host/dist"
+    patchesSource: "./patches"
+    patchesTarget: "/container_patches"
+    sharedBase: "./shared"
+    sharedTarget: "/host/shared"
+    resourcesBase: "./resources"
+    resourcesTarget: "/host/resources"
+    cacheBase: "./foundry-cache"
+    cacheTarget: "/data/container_cache"
