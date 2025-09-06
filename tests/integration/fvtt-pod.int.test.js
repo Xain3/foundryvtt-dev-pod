@@ -32,7 +32,7 @@ describe('fvtt-pod CLI binary integration tests', () => {
     // Create temporary directory for test files
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fvtt-pod-test-'));
     testComposeFile = path.join(tempDir, 'test-compose.yml');
-    
+
     // Create a basic test compose file
     const composeContent = `version: '3.8'
 services:
@@ -78,7 +78,7 @@ volumes:
   describe('basic functionality', () => {
     test('shows usage when no arguments provided', () => {
       const result = runPodHandler();
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Usage:');
       expect(result.stdout).toContain('Commands:');
@@ -89,7 +89,7 @@ volumes:
 
     test('shows help with --help flag', () => {
       const result = runPodHandler(['--help']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Usage:');
       expect(result.stdout).toContain('Options:');
@@ -98,7 +98,7 @@ volumes:
 
     test('shows help with help command', () => {
       const result = runPodHandler(['help']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Usage:');
     });
@@ -107,7 +107,7 @@ volumes:
   describe('dry-run functionality', () => {
     test('dry-run mode with up command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'up', '-d']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd up -d');
@@ -115,7 +115,7 @@ volumes:
 
     test('dry-run mode with down command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'down']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd down');
@@ -123,7 +123,7 @@ volumes:
 
     test('dry-run mode with ps command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'ps']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd ps');
@@ -131,7 +131,7 @@ volumes:
 
     test('dry-run mode with logs command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'logs', 'foundry-v13']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd logs foundry-v13');
@@ -139,7 +139,7 @@ volumes:
 
     test('dry-run mode with logs -f command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'logs', '-f', 'test-service']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd logs -f test-service');
@@ -147,7 +147,7 @@ volumes:
 
     test('dry-run mode with exec command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'exec', 'test-service', 'ls', '-la']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd exec -u 0 -it test-service ls -la');
@@ -155,7 +155,7 @@ volumes:
 
     test('dry-run mode with shell command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'shell', 'foundry-v13']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd exec -u 0 -it foundry-v13');
@@ -163,7 +163,7 @@ volumes:
 
     test('dry-run mode with start command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'start', 'test-service']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd up -d --build --no-deps test-service');
@@ -171,7 +171,7 @@ volumes:
 
     test('dry-run mode with restart command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'restart', 'foundry-v13']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd restart foundry-v13');
@@ -179,7 +179,7 @@ volumes:
 
     test('dry-run mode with build command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'build']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd build');
@@ -187,7 +187,7 @@ volumes:
 
     test('dry-run mode with build specific service', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'build', 'builder']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd build builder');
@@ -195,7 +195,7 @@ volumes:
 
     test('dry-run mode with pull command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'pull']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd pull');
@@ -203,7 +203,7 @@ volumes:
 
     test('dry-run mode with run-builder command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'run-builder']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd up -d --build builder');
@@ -211,7 +211,7 @@ volumes:
 
     test('dry-run mode with stop-builder command', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'stop-builder']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
       expect(result.stdout).toContain('Would run: dc_cmd stop builder');
@@ -221,28 +221,28 @@ volumes:
   describe('CLI argument handling', () => {
     test('handles short -f flag for compose file', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'ps']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
     });
 
     test('handles long --file flag for compose file', () => {
       const result = runPodHandler(['--file', testComposeFile, '--dry-run', 'ps']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
     });
 
     test('handles short -n flag for dry-run', () => {
       const result = runPodHandler(['-f', testComposeFile, '-n', 'up']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
     });
 
     test('handles long --dry-run flag', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'up']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
     });
@@ -251,7 +251,7 @@ volumes:
       // Change to temp directory and create default compose file
       const defaultComposePath = path.join(tempDir, 'compose.dev.yml');
       fs.writeFileSync(defaultComposePath, fs.readFileSync(testComposeFile));
-      
+
       const originalCwd = process.cwd();
       try {
         process.chdir(tempDir);
@@ -266,14 +266,14 @@ volumes:
     test('fails gracefully when compose file does not exist', () => {
       const nonExistentFile = path.join(tempDir, 'does-not-exist.yml');
       const result = runPodHandler(['-f', nonExistentFile, '--dry-run', 'up']);
-      
+
       expect(result.code).not.toBe(0);
       expect(result.stderr || result.stdout).toContain('not found');
     });
 
     test('fails gracefully with invalid command', () => {
       const result = runPodHandler(['-f', testComposeFile, 'invalid-command']);
-      
+
       expect(result.code).not.toBe(0);
       expect(result.stderr).toContain('Unknown command') || expect(result.stdout).toContain('Usage:');
     });
@@ -282,28 +282,28 @@ volumes:
   describe('command forwarding', () => {
     test('forwards additional arguments to docker compose', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'up', '-d', '--remove-orphans']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Would run: dc_cmd up -d --remove-orphans');
     });
 
     test('forwards exec arguments correctly', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'exec', 'foundry-v13', 'cat', '/etc/hostname']);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Would run: dc_cmd exec -u 0 -it foundry-v13 cat /etc/hostname');
     });
 
     test('handles complex argument combinations', () => {
       const result = runPodHandler([
-        '-f', testComposeFile, 
-        '--dry-run', 
-        'logs', 
-        '--tail', '50', 
-        '--timestamps', 
+        '-f', testComposeFile,
+        '--dry-run',
+        'logs',
+        '--tail', '50',
+        '--timestamps',
         'foundry-v13'
       ]);
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('Would run: dc_cmd logs');
       expect(result.stdout).toContain('--tail');
@@ -313,7 +313,7 @@ volumes:
   describe('docker compose detection', () => {
     test('works with docker compose v2 command structure', () => {
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'ps']);
-      
+
       expect(result.code).toBe(0);
       // The script should use docker compose (v2) when available
       expect(result.stdout).toContain('Would run: dc_cmd ps');
@@ -325,10 +325,10 @@ volumes:
       // Commands that require service names should work with valid services
       const validServiceResult = runPodHandler(['-f', testComposeFile, '--dry-run', 'logs', 'foundry-v13']);
       expect(validServiceResult.code).toBe(0);
-      
+
       const validStartResult = runPodHandler(['-f', testComposeFile, '--dry-run', 'start', 'test-service']);
       expect(validStartResult.code).toBe(0);
-      
+
       const validRestartResult = runPodHandler(['-f', testComposeFile, '--dry-run', 'restart', 'builder']);
       expect(validRestartResult.code).toBe(0);
     });
@@ -336,7 +336,7 @@ volumes:
     test('handles missing service name for commands that require it', () => {
       // Some commands might fail without service names, but in dry-run they should show what would be executed
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'exec']);
-      
+
       // The behavior might vary - either it fails gracefully or shows what would be executed
       // We mainly test that it doesn't crash
       expect(typeof result.code).toBe('number');
@@ -348,7 +348,7 @@ volumes:
       const result = runPodHandler(['--dry-run', 'ps'], {
         env: { ...process.env, COMPOSE_FILE: testComposeFile }
       });
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
     });
@@ -357,7 +357,7 @@ volumes:
       const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'ps'], {
         env: { ...process.env, COMPOSE_FILE: '/some/other/file.yml' }
       });
-      
+
       expect(result.code).toBe(0);
       expect(result.stdout).toContain('[dry-run]');
     });
@@ -367,7 +367,7 @@ volumes:
     test('provides meaningful error for missing compose file', () => {
       const missingFile = path.join(tempDir, 'missing.yml');
       const result = runPodHandler(['-f', missingFile, '--dry-run', 'up']);
-      
+
       expect(result.code).not.toBe(0);
       // Should indicate the file doesn't exist
       expect(result.stderr || result.stdout).toMatch(/does not exist|not found|no such file/i);
@@ -377,16 +377,17 @@ volumes:
       // Create a file with no read permissions (if possible on the system)
       const restrictedFile = path.join(tempDir, 'restricted.yml');
       fs.writeFileSync(restrictedFile, 'test content');
-      
+
       try {
         fs.chmodSync(restrictedFile, 0o000);
         const result = runPodHandler(['-f', restrictedFile, '--dry-run', 'ps']);
-        
+
         // Should fail but not crash
         expect(typeof result.code).toBe('number');
       } catch (error) {
         // If chmod fails (e.g., on some CI systems), skip this test
         // by just ensuring the script doesn't crash with a regular file
+        console.warn('chmod failed, skipping permission test:', error);
         const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'ps']);
         expect(result.code).toBe(0);
       } finally {
@@ -394,6 +395,8 @@ volumes:
           fs.chmodSync(restrictedFile, 0o644);
         } catch (e) {
           // Ignore cleanup errors
+          // If chmod fails (e.g., on some CI systems), skip this test
+          console.warn('cleanup chmod failed, skipping permission test:', e);
         }
       }
     });
