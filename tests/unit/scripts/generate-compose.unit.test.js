@@ -233,7 +233,8 @@ describe('scripts/generate-compose.js', () => {
       const result = buildComposeFromContainerConfig(containerCfg, opts, secretsConf);
 
       expect(result.services['app-v13']).toBeDefined();
-      expect(result.services['app-v13'].image).toBe('custom/foundry:release');
+  // No tag provided in version_params, should fall back to numeric version
+  expect(result.services['app-v13'].image).toBe('custom/foundry:13');
       expect(result.services['app-v13'].user).toBe('500:500');
       expect(result.services['app-v13'].ports).toEqual(['9999:30000']);
     });
@@ -414,7 +415,8 @@ describe('scripts/generate-compose.js', () => {
     const doc = yaml.load(output);
 
     expect(doc.services['foundry-v13']).toBeTruthy();
-    expect(doc.services['foundry-v13'].image).toBe('felddy/foundryvtt:release');
+  // When tag is provided as 'release' in version_params this remains 'release'
+  expect(doc.services['foundry-v13'].image).toBe('felddy/foundryvtt:release');
     expect(doc.services['foundry-v13'].ports[0]).toBe('30013:30000');
     expect(doc.services['foundry-v13'].volumes.some(v => typeof v === 'object' && v.source === './shared/v13')).toBe(true);
     expect(doc.services['foundry-v13'].env_file.includes('./env/.v13.env')).toBe(true);
@@ -445,11 +447,11 @@ describe('scripts/generate-compose.js', () => {
 
     expect(doc.services['custom-v13']).toBeTruthy();
     expect(doc.services['custom-v13'].ports[0]).toBe('39999:30000');
-    expect(doc.services['custom-v13'].image).toBe('felddy/foundryvtt:13');
+  expect(doc.services['custom-v13'].image).toBe('felddy/foundryvtt:13');
 
     expect(doc.services['foundry-v12']).toBeTruthy();
     expect(doc.services['foundry-v12'].ports[0]).toBe('31012:30000');
-    expect(doc.services['foundry-v12'].image).toBe('felddy/foundryvtt:12');
+  expect(doc.services['foundry-v12'].image).toBe('felddy/foundryvtt:12');
   });
 
   test('dry-run shows what would be done without writing files', () => {
@@ -848,7 +850,8 @@ describe('scripts/generate-compose.js', () => {
     });
 
     const doc = yaml.load(output);
-    expect(doc.services['foundry-v13'].image).toBe('custom/foundry:release');
+  // When COMPOSE_BASE_IMAGE override is used and no tag specified, fall back to numeric version
+  expect(doc.services['foundry-v13'].image).toBe('custom/foundry:13');
     expect(doc.services['foundry-v13'].user).toBe('1000:1000');
     expect(doc.services.builder).toBeUndefined();
   });
