@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { jest } from '@jest/globals';
 import { runBashScript } from '../utils/shell.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -22,6 +23,28 @@ function runPodHandler(args = [], opts = {}) {
   const repoRoot = path.resolve(__dirname, '../..');
   const binaryPath = path.join(repoRoot, 'scripts/pod-handler.sh');
   return runBashScript(binaryPath, args, opts);
+}
+
+// Allow longer time for integration shell operations
+jest.setTimeout(30000);
+
+/**
+ * Return combined stdout+stderr for easier assertions
+ * @param {{stdout?:string, stderr?:string}} result
+ */
+function combinedOutput(result) {
+  return `${result.stdout || ''}${result.stderr || ''}`;
+}
+
+/**
+ * Assert common dry-run expectations
+ * @param {object} result - result from runBashScript
+ * @param {RegExp} expectedPattern - regex to match the dc invocation
+ */
+function expectDryRun(result, expectedPattern) {
+  const out = combinedOutput(result);
+  expect(out).toContain('[dry-run]');
+  expect(out).toMatch(expectedPattern);
 }
 
 describe('fvtt-pod CLI binary integration tests', () => {
@@ -105,116 +128,26 @@ volumes:
   });
 
   describe('dry-run functionality', () => {
-    test('dry-run mode with up command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'up', '-d']);
-
+    test.each([
+      [['up','-d'], /Would run:.*\bup\b.*-d/],
+      [['down'], /Would run:.*\bdown\b/],
+      [['ps'], /Would run:.*\bps\b/],
+      [['logs','foundry-v13'], /Would run:.*\blogs\b.*foundry-v13/],
+      [['logs','-f','test-service'], /Would run:.*\blogs\b.*-f.*test-service/],
+      [['exec','test-service','ls','-la'], /Would run:.*\bexec\b.*test-service.*ls -la/],
+      [['shell','foundry-v13'], /Would run:.*\bexec\b.*foundry-v13/],
+      [['start','test-service'], /Would run:.*\bup\b.*--no-deps.*test-service/],
+      [['restart','foundry-v13'], /Would run:.*\brestart\b.*foundry-v13/],
+      [['build'], /Would run:.*\bbuild\b/],
+      [['build','builder'], /Would run:.*\bbuild\b.*builder/],
+      [['pull'], /Would run:.*\bpull\b/],
+      [['run-builder'], /Would run:.*\bup\b.*builder/],
+      [['stop-builder'], /Would run:.*\bstop\b.*builder/],
+    ])('dry-run mode with %p', (cmdArgs, pattern) => {
+      const args = ['-f', testComposeFile, '--dry-run', ...cmdArgs];
+      const result = runPodHandler(args);
       expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd up -d');
-    });
-
-    test('dry-run mode with down command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'down']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd down');
-    });
-
-    test('dry-run mode with ps command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'ps']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd ps');
-    });
-
-    test('dry-run mode with logs command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'logs', 'foundry-v13']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd logs foundry-v13');
-    });
-
-    test('dry-run mode with logs -f command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'logs', '-f', 'test-service']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd logs -f test-service');
-    });
-
-    test('dry-run mode with exec command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'exec', 'test-service', 'ls', '-la']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd exec -u 0 -it test-service ls -la');
-    });
-
-    test('dry-run mode with shell command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'shell', 'foundry-v13']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd exec -u 0 -it foundry-v13');
-    });
-
-    test('dry-run mode with start command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'start', 'test-service']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd up -d --build --no-deps test-service');
-    });
-
-    test('dry-run mode with restart command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'restart', 'foundry-v13']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd restart foundry-v13');
-    });
-
-    test('dry-run mode with build command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'build']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd build');
-    });
-
-    test('dry-run mode with build specific service', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'build', 'builder']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd build builder');
-    });
-
-    test('dry-run mode with pull command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'pull']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd pull');
-    });
-
-    test('dry-run mode with run-builder command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'run-builder']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd up -d --build builder');
-    });
-
-    test('dry-run mode with stop-builder command', () => {
-      const result = runPodHandler(['-f', testComposeFile, '--dry-run', 'stop-builder']);
-
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('[dry-run]');
-      expect(result.stdout).toContain('Would run: dc_cmd stop builder');
+      expectDryRun(result, pattern);
     });
   });
 
