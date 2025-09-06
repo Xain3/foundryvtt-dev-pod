@@ -1,0 +1,50 @@
+# Purpose: `defaults.yaml`
+# - Contains baseline, tunable defaults intended for runtime or deployment use.
+# - These values are safe and expected to be overridden by environment-specific
+#   configuration, CLI flags, or user-provided files.
+# - Examples: service images, CLI fallback values, and runtime tuning knobs.
+#
+# Note: Keep authoritative protocol-level definitions (capabilities, paths,
+# validation lists) in `constants.yaml`.
+
+# The following default is used only for testing purposes
+testDefault: "testValue" # DO NOT CHANGE THIS VALUE
+
+  # Compose generation defaults and tunables
+generateCompose:
+  # Foundry base image
+  foundryBaseImage: "felddy/foundryvtt"
+
+  # Docker Compose service definition defaults migrated from inline script definitions
+  defaultBuilder:
+    image: "node:20-alpine"
+    container_name: "module-builder"
+    working_dir: "/work"
+    command: "sh -c \"npm ci && npx vite build --watch\""
+    volumes:
+      - "../:/work"
+    restart: "unless-stopped"
+
+  # CLI argument fallback defaults migrated from generate-compose.js
+  argsFallbacks:
+    config: "container-config.json"
+    out: ""
+    dryRun: false
+    secretsMode: "auto"
+    secretsFile: "./secrets.json"
+    secretsExternalName: ""
+    secretsTarget: "${DEFAULT_SECRET_TARGET}" # reference constant by name (resolved at runtime if needed)
+    secretsGcpProject: ""
+    secretsGcpSecret: ""
+    secretsAzureVault: ""
+    secretsAzureSecret: ""
+    secretsAwsRegion: ""
+    secretsAwsSecret: ""
+
+  # Tunable fetch stagger defaults — moved from `constants.yaml` because these
+  # timing values are environment/runtime tuning knobs and may be adjusted
+  # per-deployment.
+  fetchStaggerDefaults:
+    high: 4
+    mid: 2
+    none: 0
