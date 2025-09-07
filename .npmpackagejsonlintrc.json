@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "require-name": "error",
+    "require-version": "error",
+    "require-description": "warn",
+    "require-license": "error",
+    "require-repository": "warn",
+    "require-scripts": "off",
+    "valid-values-license": ["warn", ["MIT", "Apache-2.0", "ISC", "BSD-3-Clause"]]
+  }
+}

@@ -459,11 +459,20 @@ function buildComposeFromComposeConfig(config, secretsConf) {
   const volumes = {};
   const services = {};
   for (const v of config.versions || []) {
-    const name = v.name; const dir = v.versionDir;
+    const name = v.name;
+    const dir = v.versionDir;
     if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
-    const tag = (typeof v.tag === 'string' && v.tag !== '') ? v.tag : dir.replace(/^v/, '');
+    // Determine image tag preference order: explicit tag > versionDir pattern > lenient strip
+    let imageTag;
+    if (typeof v.tag === 'string' && v.tag !== '') {
+      imageTag = v.tag;
+    } else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) {
+      imageTag = v.versionDir.replace(/^v/, '');
+    } else {
+      imageTag = dir.replace(/^v/, '');
+    }
     const repo = config.baseImage || FALLBACK_IMAGE;
-    const image = composeImage(repo, tag);
+    const image = composeImage(repo, imageTag);
     const user = v.user || config.user || DEFAULT_USER;
     const port = v.port || BASE_PORT;
     const envSuffix = v.envSuffix || dir;

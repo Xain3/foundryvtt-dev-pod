@@ -35,16 +35,18 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.0",
-    "@babel/preset-env": "^7.23.0",
-    "babel-jest": "^30.1.2",
+  "@babel/core": "^7.23.0",
+  "@babel/preset-env": "^7.23.0",
+  "babel-jest": "^30.1.2",
     "eslint": "^9.9.0",
-    "jest": "^30.1.3"
+    "jest": "^30.1.3",
+    "npm-package-json-lint": "^9.0.0"
   },
   "scripts": {
     "lint": "eslint scripts patches --ext .js,.mjs",
     "test": "npm run lint && node --experimental-vm-modules ./node_modules/.bin/jest",
     "test:ci": "npm run lint && node --experimental-vm-modules ./node_modules/.bin/jest --coverage",
-    "check-coverage": "node .github/scripts/check-coverage.cjs"
+    "check-coverage": "node .github/scripts/check-coverage.cjs",
+    "validate:package": "bash ./scripts/validate-package.sh"
   }
 }
