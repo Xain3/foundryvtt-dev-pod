@@ -1,75 +1,64 @@
-<!-- Copilot instructions for contributors and coding agents -->
-# FoundryVTT Dev Pod — AI Coding Agent Guide
+<!-- AI Coding Agent Guide (concise, project-specific) -->
+# FoundryVTT Dev Pod — AI Agent Instructions
 
-This repository contains small CLI tools and patch scripts used to generate Docker Compose configurations and run multi-version Foundry VTT developer pods.
+## 1. Purpose & Core Components
+Two small CLIs plus a patch framework:
+- `fvtt-compose-gen` (generate multi-version Foundry compose YAML from `container-config.json`).
+- `fvtt-pod` (orchestrate docker compose lifecycle + helpers).
+- Patch system under `patches/` (bash wrappers in `entrypoint/` delegating to Node `.mjs` scripts in `common/`).
+- Validation + caching logic in `helpers/config-validator.js` (single source: do not re‑implement elsewhere).
 
-Big picture
-- What: Two primary CLI tools (`fvtt-compose-gen`, `fvtt-pod`) plus helper modules and shell patches under `patches/`. The CLIs validate `container-config.json`, generate compose YAML, and orchestrate containers/patches.
-- Key entry points: `scripts/generate-compose.js`, `scripts/pod-handler.sh`, `scripts/validate-config.js` (validation wrapper). Core logic lives in `helpers/` and `patches/`.
+## 2. Architectural Notes
+- CLI entry scripts in `scripts/` are thin: heavy logic belongs in `helpers/` or patch `.mjs` files.
+- Service naming & version conventions (e.g. `foundry-v13`, ports `30000+<NN>`) are generated; keep defaults unless feature explicitly requires change.
+- Secrets + builder service parameters flow: flags/environment -> `generate-compose` -> emitted compose YAML consumed by `fvtt-pod`.
+- Patch wrappers: filename encodes order (`00-`, `10-`, etc.) and patch name; wrapper sources `wrapper-bin.sh` which resolves and executes the Node script.
 
-Project layout (important files)
-- `scripts/`: CLI entrypoints (thin wrappers). Inspect these for user-facing flags and behavior.
-- `helpers/`: JavaScript modules with core logic. Example: `helpers/config-validator.js` implements validation + caching used by `scripts/validate-config.js`.
-- `patches/`: Shell scripts and patch logic applied to containers. See `patches/README.md` for strategy and `entrypoint/` for ordering.
-- `tests/unit/`: Jest unit tests that mirror `helpers/` and some script behaviors.
-- `.github/`: CI helpers and coverage checks. See `.github/scripts/check-coverage.cjs` and `.github/constants/thresholds.json`.
-- `README.md` and `package.json`: canonical usage and required Node version (>=18).
+## 3. Key Workflows (copy/paste)
+- Install deps / lint+test: `npm install && npm test`
+- Full CI locally: `npm run test:ci && npm run check-coverage`
+- Generate compose: `npx fvtt-compose-gen -c container-config.json -o compose.dev.yml`
+- Up + logs (default file auto-detected): `npx fvtt-pod up -d && npx fvtt-pod logs -f foundry-v13`
+- Direct validation (skip cache): `npx scripts/validate-config.js ./container-config.json --no-cache`
+- Package validation pipeline: `npm run validate:package`
 
-Development workflows (commands)
-- Install deps: `npm install` (Node 18+).
-- Lint + tests: `npm test` (runs `eslint` then `jest`).
-- CI-style with coverage: `npm run test:ci` then `npm run check-coverage`.
-- Generate compose: `npx fvtt-compose-gen -c container-config.json -o compose.dev.yml`.
-- Start pod / tail logs: `npx fvtt-pod -f ./compose.dev.yml up -d` and `npx fvtt-pod logs -f foundry-v13`.
-- Validate config directly: `npx scripts/validate-config.js <config-path> [cache-dir]` (use `--no-cache` to force fresh validation).
+## 4. Adding / Modifying Logic
+- Extend validation: modify `helpers/config-validator.js`; update or add focused unit tests under `tests/unit/` mirroring file path.
+- New compose feature: implement helper module, call from `scripts/generate-compose.js`; ensure tests (unit) plus at least one integration in `tests/integration/` if it affects CLI surface.
+- New patch: copy `patches/common/XX-patch-entrypoint.sh.template` -> `patches/entrypoint/NN-new-thing.sh`, add Node implementation `patches/common/new-thing.mjs`; keep executable bit.
 
-Project-specific conventions and guidance
-- Keep CLI wrappers thin: move complex logic into `helpers/` to make unit-testing straightforward.
-- Use CommonJS modules (project `type` is `commonjs`). Import/require patterns in `helpers/` are canonical.
-- Validation & caching: `helpers/config-validator.js` exposes `ConfigValidator`, `validateConfigWithCache`, and `calculateFileHash`. CLI `scripts/validate-config.js` demonstrates parsing of `--no-cache` and positional args.
-- Shell patches: Files in `patches/` and `entrypoint/` are executed in container contexts; preserve shebangs and executable bits. Tests may invoke patches in dry-run mode.
-- Tests reflect usage: New features should add focused unit tests under `tests/unit/` and update coverage thresholds if new source paths are introduced.
+## 5. Conventions & Style (enforced)
+- Style: see `docs/code-style.md` (ESLint + JSDoc).
+- Node >=18, ESM modules (`type: module`).
+- Every source file (JS/MJS/SH needing docs) starts with JSDoc header block (see existing examples).
+- Descriptive names; constants UPPER_SNAKE_CASE; no `eval` / `with`.
+- Keep functions small (≈20 lines) & prefer early returns.
+- Private helpers defined above exports; exported symbols documented with JSDoc `@export` where used.
 
-Integration points & external dependencies
-- Targets `felddy/foundryvtt-docker` image and Docker runtime; changes affecting environment variables or container paths should be validated against that project.
-- Secrets modes (`file`, `external`, `gcp`, `azure`, `aws`, `none`) are implemented in generate/compose flows — see `README.md` for CLI examples and required external CLIs (`gcloud`, `az`, `aws`).
+## 6. Testing & Coverage
+- Jest invoked with `--experimental-vm-modules` (already scripted).
+- Coverage thresholds enforced by `.github/constants/thresholds.json` via `.github/scripts/check-coverage.cjs` — adjust only when justified by new surface area.
+- When adding a new path, ensure it is captured by existing or new tests to avoid threshold regressions.
 
-Examples (copyable)
-- Validate config (no-cache):
-	- `npx scripts/validate-config.js ./container-config.json --no-cache`
-- Run tests with coverage locally:
-	- `npm install && npm run test:ci && npm run check-coverage`
-- Generate and start dev pod (dev):
-	- `npx fvtt-compose-gen -c container-config.json -o compose.dev.yml && npx fvtt-pod -f ./compose.dev.yml up -d`
+## 7. Patches Framework Essentials
+- Dry-run: set `PATCH_DRY_RUN=1` or pass `-n/--dry-run` to wrapper.
+- Modes: `WRAPPER_RUN_MODE=default` (one-shot) or `sync-loop` for background sync tasks.
+- Override target script(s): `--wrapper-target install-components` (can repeat / comma-separate) and optionally `--wrapper-ext cjs`.
+- Logging prefixes: `[patch]`, `[patch][dry-run]`, `[patch][error]` — replicate format if emitting new logs.
 
-What to avoid / common pitfalls
-- Don't duplicate validation logic between `scripts/` and `helpers/` — update `helpers/config-validator.js` and keep wrappers thin.
-- When editing shell patches, ensure files remain executable and keep shebang lines intact. Avoid platform-specific assumptions unless necessary.
+## 8. Secrets / Builder
+- Secrets mode auto-detection uses provided flags/env; accepted: `file|external|gcp|azure|aws|none|auto`.
+- Experimental cloud modes write a temp file then mount as compose secret.
+- Disable builder: `COMPOSE_BUILDER_ENABLED=0` or config param; builder image defaults to `node:20-alpine`.
 
-Where to look for more context
-- `README.md` — usage, secrets modes, and quickstart examples.
-- `helpers/config-validator.js` — canonical validation and caching behavior.
-- `patches/README.md` and `entrypoint/` — patch strategy and execution order.
-- `tests/unit/` — examples of expected behaviors and how to test helpers.
+## 9. Common Pitfalls
+- Do NOT duplicate validation logic in `scripts/`; import from `helpers/config-validator.js`.
+- Preserve shebang + executable bit on any edited wrapper or new `entrypoint/*.sh` file.
+- Keep CLI flags documented in README sections; update there when adding.
+- If cache-related change: ensure hash logic (`calculateFileHash`) still produces distinct values for meaningful config/schema edits.
 
-Code style:
-## Style Appendix (enforced)
-- Indentation: 2 spaces (no tabs).
-- File header: Every source file MUST start, before any imports (but after the shebang if needed), with the exact JSDoc block:
-  /**
-  * @file the file name
-  * @description Short description of purpose
-  * @path relative/path/from/project/root
-  */
-- Variables: prefer fully descriptive names; avoid abbreviations unless very common (e.g., cfg for config) or needed for disambiguation (e.g., ctx for context).
-- JSDoc: All exported classes/functions must have JSDoc with @param/@returns (when applicable) and @export. Include public API in class JSDoc. Prefer documenting private helpers as well.
-- Naming: camelCase for variables/functions, PascalCase for classes, UPPER_SNAKE_CASE for constants.
-- Private vs public: place private helpers (non-exported) above exported/public APIs. Define helper functions before callers.
-- Function size & complexity: Aim for <= 20 lines and <= 3 nesting levels; refactor into small helpers when needed.
-- Conditionals & control flow: Use single-line only for trivial checks. Prefer early returns and brace blocks for complex conditions.
-- Forbidden patterns: Do not use eval or with.
-- Error handling: Use try...catch where needed, throw recoverable errors, and log via console or project logger.
-- Tests: Unit tests colocated with .unit.test.js; integration tests under tests/integration with .int.test.js. Use beforeEach/afterEach and beforeAll/afterAll as appropriate.
+## 10. Where to Look First
+`README.md` (usage + secrets), `helpers/config-validator.js` (validation core), `patches/README.md` (patch lifecycle), `scripts/generate-compose.js` (compose assembly), integration tests (`tests/integration/*.int.test.js`) for end-to-end expectations.
 
-
-If any part is unclear or you want more code examples and test links, tell me which areas to expand and I will iterate.
+---
+Questions or unclear area? Provide file path(s) you examined and uncertainty; respond with a proposed diff before large refactors.
