@@ -101,7 +101,7 @@ export const sha256File = cacheSha256File;
  * @returns {Promise<void>} Promise that resolves after the delay
  * @export
  */
-export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
 /**
  * Re-exported fetch with retry function from cache module.
