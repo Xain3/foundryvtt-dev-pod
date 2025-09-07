@@ -181,18 +181,25 @@ volumes:
     });
 
     test('falls back to default compose file when not specified', () => {
-      // Change to temp directory and create default compose file
-      const defaultComposePath = path.join(tempDir, 'compose.dev.yml');
-      fs.writeFileSync(defaultComposePath, fs.readFileSync(testComposeFile));
+      // Create default compose file in repo root where the binary expects it
+      const repoRoot = path.resolve(__dirname, '../..');
+      const defaultComposePath = path.join(repoRoot, 'compose.dev.yml');
+      
+      // Only create the file if it doesn't exist (don't overwrite existing)
+      const fileExists = fs.existsSync(defaultComposePath);
+      if (!fileExists) {
+        fs.writeFileSync(defaultComposePath, fs.readFileSync(testComposeFile));
+      }
 
-      const originalCwd = process.cwd();
       try {
-        process.chdir(tempDir);
         const result = runPodHandler(['--dry-run', 'ps']);
         expect(result.code).toBe(0);
         expect(result.stdout).toContain('[dry-run]');
       } finally {
-        process.chdir(originalCwd);
+        // Clean up temp file if we created it
+        if (!fileExists && fs.existsSync(defaultComposePath)) {
+          fs.unlinkSync(defaultComposePath);
+        }
       }
     });
 
