@@ -533,7 +533,18 @@ function buildComposeFromComposeConfig(config, secretsConf) {
     const dir = v.versionDir;
     if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
     let imageTag;
-    if (typeof v.tag === 'string' && v.tag !== '') imageTag = v.tag; else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) imageTag = v.versionDir.replace(/^v/, ''); else imageTag = dir.replace(/^v/, '');
+    // Use explicit tag if provided and non-empty
+    if (typeof v.tag === 'string' && v.tag !== '') {
+      imageTag = v.tag;
+    }
+    // If versionDir matches "vNN", use NN as tag
+    else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) {
+      imageTag = v.versionDir.replace(/^v/, '');
+    }
+    // Fallback: use dir with "v" stripped
+    else {
+      imageTag = dir.replace(/^v/, '');
+    }
     const repo = config.baseImage || FALLBACK_IMAGE;
     const image = composeImage(repo, imageTag);
     const user = v.user || config.user || DEFAULT_USER;
