@@ -233,7 +233,7 @@ describe('scripts/generate-compose.js', () => {
       const result = buildComposeFromContainerConfig(containerCfg, opts, secretsConf);
 
       expect(result.services['app-v13']).toBeDefined();
-  // No tag provided in version_params, should fall back to numeric version
+  // No tag provided in version_params, so fallback uses the numeric version as the tag
   expect(result.services['app-v13'].image).toBe('custom/foundry:13');
       expect(result.services['app-v13'].user).toBe('500:500');
       expect(result.services['app-v13'].ports).toEqual(['9999:30000']);
