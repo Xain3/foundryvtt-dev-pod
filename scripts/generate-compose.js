@@ -119,7 +119,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateConfig } from './validate-config.js';
 
@@ -261,9 +261,29 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 	};
 }
 
-function retrieveGcpSecret(project, secretName) {
-	const gcpCommand = `gcloud secrets versions access latest --secret="${secretName}" --project="${project}"`;
-	return execSync(gcpCommand, { encoding: 'utf8' });
+/**
+ * Retrieve a secret's latest version from GCP Secret Manager.
+ * @param {string} project GCP project ID
+ * @param {string} secretName Secret name in Secret Manager
+ * @param {Function} [execFn=execFileSync] Internal: injectable exec function for tests
+ * @returns {string} Secret value (utf8 string)
+ * @export
+ */
+function retrieveGcpSecret(project, secretName, execFn = execFileSync) {
+	if (typeof project !== 'string' || !project.trim()) {
+		throw new Error('GCP project must be a non-empty string');
+	}
+	if (typeof secretName !== 'string' || !secretName.trim()) {
+		throw new Error('GCP secret name must be a non-empty string');
+	}
+	const trimmedProject = project.trim();
+	const trimmedSecret = secretName.trim();
+	const args = [
+		'secrets', 'versions', 'access', 'latest',
+		`--secret=${trimmedSecret}`,
+		`--project=${trimmedProject}`
+	];
+	return execFn('gcloud', args, { encoding: 'utf8' });
 }
 
 function retrieveAzureSecret(vaultName, secretName) {
@@ -311,7 +331,14 @@ function buildComposeFromComposeConfig(config, secretsConf) {
 
 		// Prefer an explicit tag if provided; if tag is missing or empty,
 		// fall back to the numeric version directory when available.
-		const imageTag = (typeof v.tag === 'string' && v.tag !== '') ? v.tag : v.versionDir.replace(/^v/, '');
+		let imageTag;
+		if (typeof v.tag === 'string' && v.tag !== '') {
+			imageTag = v.tag;
+		} else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) {
+			imageTag = v.versionDir.replace(/^v/, '');
+		} else {
+			throw new Error(`Invalid versionDir format for service "${name}": "${v.versionDir}". Expected format "vNN".`);
+		}
 		const image = `${config.baseImage || 'felddy/foundryvtt'}:${imageTag}`;
 		const user = v.user || config.user || '0:0';
 		const port = v.port || 30000;
