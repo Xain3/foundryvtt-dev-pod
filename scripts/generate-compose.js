@@ -119,7 +119,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateConfig } from './validate-config.js';
 
@@ -322,108 +322,112 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
   if (mode === 'none') return { topLevel: {}, serviceRef: [] };
   const target = opts.secretsTarget || DEFAULT_SECRET_TARGET;
 
-  if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
-    const name = opts.secretsExternalName || SECRET_BASE_NAME;
-    return { topLevel: { [name]: { external: true } }, serviceRef: [ { source: name, target } ] };
-  }
+	if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
+		const name = opts.secretsExternalName || 'config_json';
+		return {
+			topLevel: { [name]: { external: true } },
+			serviceRef: [ { source: name, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
 
-  const providerCandidates = [
-    { mode: 'gcp', cond: mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret), suffix: SECRET_PROVIDER_SUFFIX.gcp, getter: () => retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret) },
-    { mode: 'azure', cond: mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret), suffix: SECRET_PROVIDER_SUFFIX.azure, getter: () => retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret) },
-    { mode: 'aws', cond: mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret), suffix: SECRET_PROVIDER_SUFFIX.aws, getter: () => retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret) }
-  ];
-  for (const p of providerCandidates) {
-    if (!p.cond) continue;
-    console.warn(experimentalWarning(p.mode));
-    const secretName = `${SECRET_BASE_NAME}_${p.suffix}`;
-    const fp = tempSecretPath(p.suffix, nextTempId());
-    try {
-      fs.writeFileSync(fp, p.getter(), 'utf8');
-    } catch (error) {
-      const map = { gcp: 'GCP', azure: 'Azure', aws: 'AWS' };
-      const proper = map[p.mode.toLowerCase()] || p.mode;
-      throw new Error(`Failed to retrieve ${proper} secret: ${error.message}`);
-    }
-    return { topLevel: { [secretName]: { file: fp } }, serviceRef: [ { source: secretName, target } ] };
-  }
-  return { topLevel: { [SECRET_BASE_NAME]: { file: opts.secretsFile || './secrets.json' } }, serviceRef: [ { source: SECRET_BASE_NAME, target } ] };
+	if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
+		console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
+		const secretName = 'config_json_gcp';
+		const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
+
+		// Create a temporary file with the GCP secret content
+		try {
+			const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
+			fs.writeFileSync(gcpSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: gcpSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
+	if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
+		console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
+		const secretName = 'config_json_azure';
+		const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
+
+		// Create a temporary file with the Azure secret content
+		try {
+			const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
+			fs.writeFileSync(azureSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: azureSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
+	if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
+		console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
+		const secretName = 'config_json_aws';
+		const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
+
+		// Create a temporary file with the AWS secret content
+		try {
+			const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
+			fs.writeFileSync(awsSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: awsSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
+	return {
+		topLevel: { config_json: { file: opts.secretsFile || './secrets.json' } },
+		serviceRef: [ { source: 'config_json', target: opts.secretsTarget || 'config.json' } ],
+	};
 }
 
 /**
- * Retrieve a secret's latest version from GCP Secret Manager (safer variant).
- * Backwards compatible with prior 2-arg signature (project, secretName).
+ * Retrieve a secret's latest version from GCP Secret Manager.
  * @param {string} project GCP project ID
  * @param {string} secretName Secret name in Secret Manager
- * @param {Function} [execFn=execFileSync] Injectable exec function for tests
- * @returns {string} Secret value (utf8, trimmed)
+ * @param {Function} [execFn=execFileSync] Internal: injectable exec function for tests
+ * @returns {string} Secret value (utf8 string)
  * @export
  */
 function retrieveGcpSecret(project, secretName, execFn = execFileSync) {
-  if (typeof project !== 'string' || !project.trim()) throw new Error('GCP project must be a non-empty string');
-  if (typeof secretName !== 'string' || !secretName.trim()) throw new Error('GCP secret name must be a non-empty string');
-  const trimmedProject = project.trim();
-  const trimmedSecret = secretName.trim();
-  const args = [ 'secrets', 'versions', 'access', 'latest', `--secret=${trimmedSecret}`, `--project=${trimmedProject}` ];
-  try {
-    const out = execFn('gcloud', args, {
-      encoding: 'utf8',
-      timeout: 8000,
-      env: { ...process.env, CLOUDSDK_CORE_DISABLE_PROMPTS: '1' }
-    });
-    return typeof out === 'string' ? out.trimEnd() : out;
-  } catch (err) {
-    throw new Error(`GCP secret retrieval failed (project=${trimmedProject}, secret=${trimmedSecret}): ${err.message}`);
-  }
+	if (typeof project !== 'string' || !project.trim()) {
+		throw new Error('GCP project must be a non-empty string');
+	}
+	if (typeof secretName !== 'string' || !secretName.trim()) {
+		throw new Error('GCP secret name must be a non-empty string');
+	}
+	const trimmedProject = project.trim();
+	const trimmedSecret = secretName.trim();
+	const args = [
+		'secrets', 'versions', 'access', 'latest',
+		`--secret=${trimmedSecret}`,
+		`--project=${trimmedProject}`
+	];
+	return execFn('gcloud', args, { encoding: 'utf8' });
 }
 
-/**
- * Fetch secret value from Azure Key Vault.
- * @param {string} vaultName Key Vault name
- * @param {string} secretName Secret identifier
- * @returns {string} Secret value
- * @export
- */
-function retrieveAzureSecret(vaultName, secretName, execFn = execFileSync) {
-  if (typeof vaultName !== 'string' || !vaultName.trim()) throw new Error('Azure vault name must be a non-empty string');
-  if (typeof secretName !== 'string' || !secretName.trim()) throw new Error('Azure secret name must be a non-empty string');
-  const v = vaultName.trim();
-  const s = secretName.trim();
-  const args = ['keyvault', 'secret', 'show', '--vault-name', v, '--name', s, '--query', 'value', '--output', 'tsv'];
-  try {
-    const out = execFn('az', args, { encoding: 'utf8', timeout: 8000, env: { ...process.env, AZURE_CORE_ONLY_SHOW_ERRORS: '1' } });
-    return typeof out === 'string' ? out.trimEnd() : out;
-  } catch (err) {
-    throw new Error(`Azure secret retrieval failed (vault=${v}, secret=${s}): ${err.message}`);
-  }
+function retrieveAzureSecret(vaultName, secretName) {
+	const azureCommand = `az keyvault secret show --vault-name "${vaultName}" --name "${secretName}" --query value --output tsv`;
+	return execSync(azureCommand, { encoding: 'utf8' });
 }
 
-/**
- * Fetch secret value from AWS Secrets Manager.
- * @param {string} region AWS region
- * @param {string} secretName Secret id/name
- * @returns {string} Secret JSON/string value
- * @export
- */
-function retrieveAwsSecret(region, secretName, execFn = execFileSync) {
-  if (typeof region !== 'string' || !region.trim()) throw new Error('AWS region must be a non-empty string');
-  if (typeof secretName !== 'string' || !secretName.trim()) throw new Error('AWS secret name must be a non-empty string');
-  const r = region.trim();
-  const s = secretName.trim();
-  const args = ['secretsmanager', 'get-secret-value', '--region', r, '--secret-id', s, '--query', 'SecretString', '--output', 'text'];
-  try {
-    const out = execFn('aws', args, { encoding: 'utf8', timeout: 8000, env: { ...process.env, AWS_PAGER: '' } });
-    return typeof out === 'string' ? out.trimEnd() : out;
-  } catch (err) {
-    throw new Error(`AWS secret retrieval failed (region=${r}, secret=${s}): ${err.message}`);
-  }
+function retrieveAwsSecret(region, secretName) {
+	const awsCommand = `aws secretsmanager get-secret-value --region "${region}" --secret-id "${secretName}" --query SecretString --output text`;
+	return execSync(awsCommand, { encoding: 'utf8' });
 }
 
-/**
- * Convert an object of key/value pairs into an array of key=value strings for compose.
- * @param {Object|number|undefined} envObjOrNumber Possibly environment object
- * @returns {string[]} Environment entries list
- * @export
- */
 function toEnvList(envObjOrNumber) {
   if (envObjOrNumber && typeof envObjOrNumber === 'object' && !Array.isArray(envObjOrNumber)) {
     return Object.entries(envObjOrNumber).map(([k, v]) => `${k}=${v}`);
@@ -455,26 +459,67 @@ function resolveTemplatedNumber(value, version) { if (typeof value === 'number')
  * @export
  */
 function buildComposeFromComposeConfig(config, secretsConf) {
-  const secrets = secretsConf.topLevel || {};
-  const volumes = {};
-  const services = {};
-  for (const v of config.versions || []) {
-    const name = v.name; const dir = v.versionDir;
-    if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
-    const tag = (typeof v.tag === 'string' && v.tag !== '') ? v.tag : dir.replace(/^v/, '');
-    const repo = config.baseImage || FALLBACK_IMAGE;
-    const image = composeImage(repo, tag);
-    const user = v.user || config.user || DEFAULT_USER;
-    const port = v.port || BASE_PORT;
-    const envSuffix = v.envSuffix || dir;
-    const fetchStagger = v.fetchStaggerSeconds ?? FETCH_STAGGER_DEFAULTS.none;
-    volumes[`${name}-data`] = null;
-    services[name] = createFoundryService({ name, dir, image, user, port, fetchStagger, secretsRef: secretsConf.serviceRef || [], envSuffix });
-  }
-  if (config.builder?.enabled !== false) {
-    services.builder = { ...DEFAULT_BUILDER, image: (config.builder && config.builder.image) || DEFAULT_BUILDER.image };
-  }
-  return { secrets, volumes, services };
+	const secrets = secretsConf.topLevel || {};
+
+	const volumes = {};
+	const services = {};
+
+	for (const v of config.versions || []) {
+		const name = v.name;
+		const dir = v.versionDir;
+		if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
+
+		// Prefer an explicit tag if provided; if tag is missing or empty,
+		// fall back to the numeric version directory when available.
+		let imageTag;
+		if (typeof v.tag === 'string' && v.tag !== '') {
+			imageTag = v.tag;
+		} else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) {
+			imageTag = v.versionDir.replace(/^v/, '');
+		} else {
+			throw new Error(`Invalid versionDir format for service "${name}": "${v.versionDir}". Expected format "vNN".`);
+		}
+		const image = `${config.baseImage || 'felddy/foundryvtt'}:${imageTag}`;
+		const user = v.user || config.user || '0:0';
+		const port = v.port || 30000;
+		const envSuffix = v.envSuffix || dir;
+		const fetchStagger = v.fetchStaggerSeconds ?? 0;
+
+		volumes[`${name}-data`] = null;
+
+		services[name] = {
+			image,
+			container_name: name,
+			hostname: name,
+			user: `${user}`,
+			ports: [ `${port}:30000` ],
+			volumes: [
+				`${name}-data:/data`,
+				{ type: 'bind', source: './container-config.json', target: '/config/container-config.json', read_only: true },
+				{ type: 'bind', source: './dist', target: '/host/dist', read_only: true },
+				{ type: 'bind', source: './patches', target: '/container_patches' },
+				{ type: 'bind', source: `./shared/${dir}`, target: '/host/shared', read_only: false },
+				{ type: 'bind', source: `./resources/${dir}`, target: '/host/resources', read_only: true },
+				{ type: 'bind', source: `./foundry-cache/${dir}`, target: '/data/container_cache' },
+			],
+			secrets: secretsConf.serviceRef || [],
+			env_file: [ './env/.env', `./env/.${envSuffix}.env` ],
+			environment: [ `FETCH_STAGGER_SECONDS=${fetchStagger}` ],
+		};
+	}
+
+	if (config.builder?.enabled !== false) {
+		services['builder'] = {
+			image: (config.builder && config.builder.image) || 'node:20-alpine',
+			container_name: 'module-builder',
+			working_dir: '/work',
+			command: 'sh -c "npm ci && npx vite build --watch"',
+			volumes: [ '../:/work' ],
+			restart: 'unless-stopped',
+		};
+	}
+
+	return { secrets, volumes, services };
 }
 
 /**

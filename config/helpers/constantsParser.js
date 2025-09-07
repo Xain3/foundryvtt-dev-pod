@@ -96,27 +96,20 @@ class ConstantsParser {
    * @static
    */
   static createRootMapFromYaml(rootMapConfig) {
-    // Support being passed either:
-    // 1. The actual rootMap object, or
-    // 2. An object containing a `rootMap` property (mirrors some config/test inputs)
-    const effectiveConfig = (rootMapConfig && typeof rootMapConfig === 'object' && !Array.isArray(rootMapConfig) && rootMapConfig.rootMap && typeof rootMapConfig.rootMap === 'object')
-      ? rootMapConfig.rootMap
-      : rootMapConfig;
-
     return (runtimeGlobalNamespace, runtimeModule) => {
       const rootMap = {};
-      for (const [key, value] of Object.entries(effectiveConfig || {})) {
+
+      for (const [key, value] of Object.entries(rootMapConfig)) {
         if (value === null) {
           rootMap[key] = null;
-        } else if (value === 'module') {
+        } else if (value === "module") {
           rootMap[key] = runtimeModule;
-        } else if (typeof value === 'string') {
-          rootMap[key] = PathUtils.resolvePath(runtimeGlobalNamespace, value);
         } else {
-          // Fallback: preserve value as-is for any unexpected types
-          rootMap[key] = value;
+          // Dynamically resolve the path
+          rootMap[key] = PathUtils.resolvePath(runtimeGlobalNamespace, value);
         }
       }
+
       return rootMap;
     };
   }
