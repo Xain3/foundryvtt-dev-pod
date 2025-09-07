@@ -85,21 +85,21 @@ class ConstantsParser {
   }
 
   /**
-   * Creates a root map function from configuration object.
+   * Creates a root map function from a rootMap object.
    * The returned function can be called with globalNamespace and module parameters
    * to generate a root map with resolved paths.
    *
-   * @param {Object} config - The configuration object containing rootMap definition.
+   * @param {Object} rootMapConfig - The rootMap object definition.
    * @param {Object} [globalNamespace=undefined] - The global namespace for path resolution (used as default).
    * @param {Object} [module=undefined] - The module object for root map creation (used as default).
    * @returns {Function} A function that creates the root map when called with (globalNamespace, module).
    * @static
    */
-  static createRootMapFromYaml(config) {
+  static createRootMapFromYaml(rootMapConfig) {
     return (runtimeGlobalNamespace, runtimeModule) => {
       const rootMap = {};
 
-      for (const [key, value] of Object.entries(config.rootMap)) {
+      for (const [key, value] of Object.entries(rootMapConfig)) {
         if (value === null) {
           rootMap[key] = null;
         } else if (value === "module") {
