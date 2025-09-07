@@ -1,7 +1,7 @@
 /**
  * @file constantsGetter.js
  * @description This file contains the ConstantsGetter class for reading constants from YAML files.
- * @path src/config/helpers/constantsGetter.js
+ * @path config/helpers/constantsGetter.js
  */
 
 import fs from 'node:fs';
