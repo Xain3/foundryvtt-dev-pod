@@ -6,9 +6,13 @@ on:
 
 jobs:
   validate-package:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
