@@ -24,6 +24,7 @@ const {
   resolveTemplatedNumber,
   buildComposeFromComposeConfig,
   buildComposeFromContainerConfig,
+  retrieveGcpSecret,
   main
 } = generateCompose;
 
@@ -160,6 +161,38 @@ describe('scripts/generate-compose.js', () => {
     });
   });
 
+  describe('retrieveGcpSecret function', () => {
+    test('passes separated args to exec function', () => {
+      const mockExec = jest.fn().mockReturnValue('{"ok":true}');
+      const out = retrieveGcpSecret('proj-id', 'secret-name', mockExec);
+      expect(out).toBe('{"ok":true}');
+      expect(mockExec).toHaveBeenCalledTimes(1);
+      const [cmd, args, opts] = mockExec.mock.calls[0];
+      expect(cmd).toBe('gcloud');
+      expect(Array.isArray(args)).toBe(true);
+      expect(args).toContain('--secret=secret-name');
+      expect(args).toContain('--project=proj-id');
+      expect(opts).toMatchObject({ encoding: 'utf8' });
+    });
+
+    test('trims inputs before passing to exec function', () => {
+      const mockExec = jest.fn().mockReturnValue('value');
+      const out = retrieveGcpSecret('  myproj  ', '  mysecret  ', mockExec);
+      expect(out).toBe('value');
+      const [, args] = mockExec.mock.calls[0];
+      expect(args).toContain('--project=myproj');
+      expect(args).toContain('--secret=mysecret');
+    });
+
+    test('throws on empty project', () => {
+      expect(() => retrieveGcpSecret('', 's')).toThrow(/project/);
+    });
+
+    test('throws on empty secret name', () => {
+      expect(() => retrieveGcpSecret('p', '')).toThrow(/secret/);
+    });
+  });
+
   describe('buildComposeFromComposeConfig function', () => {
     test('builds compose configuration', () => {
       const config = {
@@ -233,7 +266,8 @@ describe('scripts/generate-compose.js', () => {
       const result = buildComposeFromContainerConfig(containerCfg, opts, secretsConf);
 
       expect(result.services['app-v13']).toBeDefined();
-      expect(result.services['app-v13'].image).toBe('custom/foundry:release');
+  // No tag provided in version_params, so fallback uses the numeric version as the tag
+  expect(result.services['app-v13'].image).toBe('custom/foundry:13');
       expect(result.services['app-v13'].user).toBe('500:500');
       expect(result.services['app-v13'].ports).toEqual(['9999:30000']);
     });
@@ -414,7 +448,8 @@ describe('scripts/generate-compose.js', () => {
     const doc = yaml.load(output);
 
     expect(doc.services['foundry-v13']).toBeTruthy();
-    expect(doc.services['foundry-v13'].image).toBe('felddy/foundryvtt:release');
+  // When tag is provided as 'release' in version_params this remains 'release'
+  expect(doc.services['foundry-v13'].image).toBe('felddy/foundryvtt:release');
     expect(doc.services['foundry-v13'].ports[0]).toBe('30013:30000');
     expect(doc.services['foundry-v13'].volumes.some(v => typeof v === 'object' && v.source === './shared/v13')).toBe(true);
     expect(doc.services['foundry-v13'].env_file.includes('./env/.v13.env')).toBe(true);
@@ -445,11 +480,11 @@ describe('scripts/generate-compose.js', () => {
 
     expect(doc.services['custom-v13']).toBeTruthy();
     expect(doc.services['custom-v13'].ports[0]).toBe('39999:30000');
-    expect(doc.services['custom-v13'].image).toBe('felddy/foundryvtt:13');
+  expect(doc.services['custom-v13'].image).toBe('felddy/foundryvtt:13');
 
     expect(doc.services['foundry-v12']).toBeTruthy();
     expect(doc.services['foundry-v12'].ports[0]).toBe('31012:30000');
-    expect(doc.services['foundry-v12'].image).toBe('felddy/foundryvtt:12');
+  expect(doc.services['foundry-v12'].image).toBe('felddy/foundryvtt:12');
   });
 
   test('dry-run shows what would be done without writing files', () => {
@@ -848,7 +883,8 @@ describe('scripts/generate-compose.js', () => {
     });
 
     const doc = yaml.load(output);
-    expect(doc.services['foundry-v13'].image).toBe('custom/foundry:release');
+  // When COMPOSE_BASE_IMAGE override is used and no tag specified, fall back to numeric version
+  expect(doc.services['foundry-v13'].image).toBe('custom/foundry:13');
     expect(doc.services['foundry-v13'].user).toBe('1000:1000');
     expect(doc.services.builder).toBeUndefined();
   });
