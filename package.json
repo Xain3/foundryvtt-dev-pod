@@ -63,7 +63,10 @@
     "test": "npm run lint && npm run test:unit && npm run test:integration",
     "test:unit": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit/",
     "test:integration": "node --experimental-vm-modules ./node_modules/.bin/jest tests/integration/ --maxWorkers=1",
-    "test:ci": "npm run lint && npm run test:unit && npm run test:integration -- --coverage",
+    "test:watch": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit/ --watch",
+    "test:debug": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit/ --inspect-brk",
+    "test:combined": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit tests/integration --coverage --maxWorkers=1",
+    "test:ci": "npm run lint && npm run test:combined",
     "check-coverage": "node .github/scripts/check-coverage.cjs",
     "validate:package": "bash ./scripts/validate-package.sh"
   }
