@@ -1,4 +1,6 @@
 node_modules
-coverage
 .jest-tmp-installer
 tmp-*
+coverage/clover.xml
+coverage/lcov-report
+coverage/lcov.info
