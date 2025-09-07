@@ -22,7 +22,9 @@ It leverages Docker for containerization and supports multiple Foundry versions 
 - [Secrets Modes](#secrets-modes)
 - [Builder Service](#builder-service)
 - [Development Workflow](#development-workflow)
+  - [Using Path Aliases](#using-path-aliases)
 - [Testing \& Coverage](#testing--coverage)
+  - [Editor (VSCode) Jest Setup](#editor-vscode-jest-setup)
 - [Publishing Note](#publishing-note)
 - [Acknowledgments](#acknowledgments)
 
@@ -184,8 +186,9 @@ npm run validate:package
 This project supports path aliases for cleaner imports and better IDE support:
 
 **IntelliSense Support (jsconfig.json):**
+
 - `#/*` - Project root
-- `#scripts/*` - Scripts directory  
+- `#scripts/*` - Scripts directory
 - `#helpers/*` - Helper modules
 - `#config/*` - Configuration files
 - `#patches/*` - Patch system
@@ -199,6 +202,7 @@ This project supports path aliases for cleaner imports and better IDE support:
 
 **Package Exports:**
 External projects can import modules using the package name:
+
 ```javascript
 // Access config files
 const babelConfig = require('foundryvtt-dev-pod/babel.config.cjs');
@@ -212,6 +216,33 @@ const example = require('foundryvtt-dev-pod/examples/container-config.json');
 ## Testing & Coverage
 
 Jest runs with ESM support (`--experimental-vm-modules`). Coverage thresholds enforced by `.github/constants/thresholds.json` using a custom checker script.
+
+### Editor (VSCode) Jest Setup
+
+The repo uses a multi-project Jest configuration (`jest.config.js`) that defines:
+
+- `unit` project: matches `tests/unit/**/*.unit.test.js` and `tests/unit/**/*.test.js`
+- `integration` project: matches `tests/integration/**/*.int.test.js` and `tests/integration/**/*.test.js` with `maxWorkers: 1` to avoid race conditions against shared temp resources.
+
+VSCode Jest extension is configured via `.vscode/settings.json` to:
+
+- Run tests on save (current file only) instead of watch mode
+- Use the Node VM Modules flag transparently through `jest.jestCommandLine`
+
+If you want to focus only on unit tests in the UI, use the test file naming conventions above; the extension will scope to the saved file.
+
+Manual CLI equivalents:
+
+```zsh
+# Run only unit project
+npx jest --selectProjects unit
+
+# Run only integration (serialized)
+npx jest --selectProjects integration
+
+# Run a single integration test file explicitly
+npx jest --selectProjects integration tests/integration/fvtt-compose-gen.int.test.js
+```
 
 ## Publishing Note
 

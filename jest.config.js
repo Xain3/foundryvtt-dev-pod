@@ -1,4 +1,5 @@
-export default {
+// Base Jest configuration shared across project groups (unit & integration)
+const baseConfig = {
   testEnvironment: 'node',
   transform: {},
   moduleFileExtensions: ['js', 'mjs', 'json', 'node'],
@@ -23,4 +24,27 @@ export default {
   },
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'json-summary', 'lcov']
+};
+
+export default {
+  projects: [
+    {
+      displayName: 'unit',
+      ...baseConfig,
+      testMatch: [
+        '<rootDir>/tests/unit/**/*.unit.test.js',
+        '<rootDir>/tests/unit/**/*.test.js'
+      ]
+    },
+    {
+      displayName: 'integration',
+      ...baseConfig,
+      testMatch: [
+        '<rootDir>/tests/integration/**/*.int.test.js',
+        '<rootDir>/tests/integration/**/*.test.js'
+      ],
+      // Avoid race conditions / shared resource conflicts in integration tests
+      maxWorkers: 1
+    }
+  ]
 };
