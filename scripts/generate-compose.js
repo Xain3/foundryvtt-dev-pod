@@ -503,7 +503,19 @@ function resolveTemplatedString(template, version) { return applyVersionTemplate
  * @returns {number|undefined} Resolved numeric value if valid
  * @export
  */
-function resolveTemplatedNumber(value, version) { if (typeof value === 'number') return value; if (typeof value === 'string') { const s = value.replaceAll(VERSION_PLACEHOLDER, String(version)); const n = Number(s); if (!Number.isNaN(n)) return n; } return undefined; }
+function resolveTemplatedNumber(value, version) {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const s = value.replaceAll(VERSION_PLACEHOLDER, String(version));
+    const n = Number(s);
+    if (!Number.isNaN(n)) {
+      return n;
+    }
+  }
+  return undefined;
+}
 
 /**
  * Build docker compose structure from explicit compose-style configuration (advanced mode).
