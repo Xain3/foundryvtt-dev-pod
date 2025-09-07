@@ -1,0 +1,29 @@
+name: Sync package.json schema
+
+on:
+  schedule:
+    - cron: '0 0 1 * *' # At 00:00 on day-of-month 1 (monthly)
+  workflow_dispatch: {}
+
+jobs:
+  sync-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Run schema sync (CI mode)
+        env:
+          NO_PUSH: '1'
+        run: |
+          bash .github/scripts/sync-package-schema.sh
+      - name: Commit & Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(schemas): update package.schema.json from SchemaStore"
+          title: "chore(schemas): update package.schema.json"
+          body: "This PR updates the local package.json schema mirror from SchemaStore."
+          branch: "sync/package-schema-update"
