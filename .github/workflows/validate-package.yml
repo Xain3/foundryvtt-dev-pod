@@ -1,0 +1,21 @@
+name: Validate package.json
+
+on:
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  validate-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run package.json validation
+        env:
+          USE_LOCAL_SCHEMA: '0'
+        run: npm run validate:package
