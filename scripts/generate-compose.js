@@ -617,7 +617,8 @@ function main() {
   if (dryRun) {
     console.log('[dry-run] Would generate compose YAML from config:', absConf);
     if (out) {
-      const absOut = path.resolve(out); console.log(`[dry-run] Would write to: ${absOut}`);
+      const absOut = path.resolve(out);
+      console.log(`[dry-run] Would write to: ${absOut}`);
     } else {
 			console.log('[dry-run] Would write to: stdout');
 		}
@@ -625,7 +626,9 @@ function main() {
     return;
   }
   if (out) { const absOut = path.resolve(out); fs.writeFileSync(absOut, yml, 'utf8'); console.log(`Wrote ${absOut}`); }
-  else { process.stdout.write(yml); }
+  else {
+    process.stdout.write(yml);
+  }
 }
 
 // Export functions for testing (single definitive export object)
