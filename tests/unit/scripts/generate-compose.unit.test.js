@@ -24,6 +24,7 @@ const {
   resolveTemplatedNumber,
   buildComposeFromComposeConfig,
   buildComposeFromContainerConfig,
+  retrieveGcpSecret,
   main
 } = generateCompose;
 
@@ -157,6 +158,38 @@ describe('scripts/generate-compose.js', () => {
     test('returns undefined for invalid input', () => {
       expect(resolveTemplatedNumber('invalid', 13)).toBeUndefined();
       expect(resolveTemplatedNumber(null, 13)).toBeUndefined();
+    });
+  });
+
+  describe('retrieveGcpSecret function', () => {
+    test('passes separated args to exec function', () => {
+      const mockExec = jest.fn().mockReturnValue('{"ok":true}');
+      const out = retrieveGcpSecret('proj-id', 'secret-name', mockExec);
+      expect(out).toBe('{"ok":true}');
+      expect(mockExec).toHaveBeenCalledTimes(1);
+      const [cmd, args, opts] = mockExec.mock.calls[0];
+      expect(cmd).toBe('gcloud');
+      expect(Array.isArray(args)).toBe(true);
+      expect(args).toContain('--secret=secret-name');
+      expect(args).toContain('--project=proj-id');
+      expect(opts).toMatchObject({ encoding: 'utf8' });
+    });
+
+    test('trims inputs before passing to exec function', () => {
+      const mockExec = jest.fn().mockReturnValue('value');
+      const out = retrieveGcpSecret('  myproj  ', '  mysecret  ', mockExec);
+      expect(out).toBe('value');
+      const [, args] = mockExec.mock.calls[0];
+      expect(args).toContain('--project=myproj');
+      expect(args).toContain('--secret=mysecret');
+    });
+
+    test('throws on empty project', () => {
+      expect(() => retrieveGcpSecret('', 's')).toThrow(/project/);
+    });
+
+    test('throws on empty secret name', () => {
+      expect(() => retrieveGcpSecret('p', '')).toThrow(/secret/);
     });
   });
 
