@@ -105,12 +105,17 @@ For classes, document public API methods. Private helpers (non-exported) should 
 Format (present tense):
 
 ```text
-area: concise imperative summary
+type(area): concise imperative summary
 
 Optional body explaining rationale, tradeoffs, links.
 ```
 
+Examples of `type`: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
 Examples of `area`: `helpers`, `scripts`, `patches`, `docs`, `tests`, `config`.
+
+Examples:
+`feat(helpers): add config hash salt`
+`fix(patches): add retry around sync`
 
 ## 14. Directory README Requirement
 
