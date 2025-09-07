@@ -8,13 +8,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
+import { stripNullTerminated } from './helpers/stripNullTerminated.js';
+
 function ensureDirSync(dir) {
 	if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 function parseOctal(str) {
 	// tar sizes are stored as octal ASCII, possibly null/space padded
-	const s = String(str).replace(/\u0000.*$/, '').trim();
+	const s = stripNullTerminated(String(str));
 	const m = s.match(/[0-7]+/);
 	return m ? parseInt(m[0], 8) : 0;
 }
@@ -36,10 +38,10 @@ export async function extractTarBuffer(buf, destDir) {
 		// End of archive: two consecutive zero blocks
 		if (header.every((b) => b === 0)) break;
 
-		const name = header.slice(0, 100).toString('utf8').replace(/\u0000.*$/, '');
+		const name = stripNullTerminated(header.slice(0, 100).toString('utf8'));
 		const size = parseOctal(header.slice(124, 136).toString('utf8'));
 		const typeflag = header[156];
-		const prefix = header.slice(345, 500).toString('utf8').replace(/\u0000.*$/, '');
+		const prefix = stripNullTerminated(header.slice(345, 500).toString('utf8'));
 		const fullName = prefix ? path.join(destDir, prefix, name) : path.join(destDir, name);
 
 		if (typeflag === 53 /* '5' */) {
@@ -116,5 +118,7 @@ export async function extractArchiveNode(archivePath, destDir, sourceName, { deb
 	}
 	return { success: false, error: 'node-extract: unknown archive format' };
 }
+
+export { stripNullTerminated };
 
 export default { extractArchiveNode };
