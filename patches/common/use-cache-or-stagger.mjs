@@ -27,7 +27,7 @@ function compareVersionKeys(a, b) { const av = numericVersionKey(a); const bv = 
 function pickLatestZip(dir) { if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return ""; const files = fs.readdirSync(dir).filter((f) => looksLikeZipName(f)).map((f) => path.join(dir, f)).filter((p) => { try { return fs.statSync(p).isFile(); } catch { return false; } }); if (!files.length) return ""; files.sort(compareVersionKeys); return files[files.length - 1] || ""; }
 function isPositiveIntegerString(s) { return /^[0-9]+$/.test(String(s)); }
 function randomJitterSeconds(max = 2) { return Math.random() * max; }
-async function sleepSeconds(sec) { const ms = Math.max(0, Number(sec)) * 1000; return new Promise((resolve) => setTimeout(resolve, ms)); }
+async function sleepSeconds(sec) { const ms = Math.max(0, Number(sec)) * 1000; return new Promise((resolve) => {setTimeout(resolve, ms)}); }
 
 async function main() {
 	const latestZip = pickLatestZip(CACHE_DIR);

@@ -75,7 +75,7 @@ export async function fetchWithRetry(url, opts = {}, { retries = 3, baseDelayMs 
 			if (attempt < retries) {
 				const delay = baseDelayMs * Math.pow(2, attempt) + Math.floor(Math.random() * 100);
 				if (debug) console.log(`[patch][debug] fetch retry ${attempt + 1}/${retries} in ${delay}ms for ${url}: ${e.message}`);
-				await new Promise((r) => setTimeout(r, delay));
+				await new Promise((r) => { setTimeout(r, delay); });
 			}
 		}
 	}
