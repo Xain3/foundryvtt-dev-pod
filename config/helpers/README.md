@@ -15,8 +15,8 @@ The constants helpers are organized into four main classes:
 
 ### ConstantsBuilder (Flexible Loader)
 
-**File**: `constantsBuilder.js`  
-**Dependencies**: `ConstantsParser`, `ConstantsGetter` (fallback)  
+**File**: `constantsBuilder.js`
+**Dependencies**: `ConstantsParser`, `ConstantsGetter` (fallback)
 **Exports**: `ConstantsBuilder` (class)
 
 Flexible loader for constants / defaults YAML with injectable sources and parser.
@@ -142,9 +142,8 @@ try {
 } catch (error) {
   console.error('Failed to read constants:', error.message);
   // Handle error appropriately
-
-
-```javascript
+}
+```
 
 ## Parsing & Processing
 
@@ -241,16 +240,14 @@ The parser uses `PathUtils.resolvePath()` to dynamically resolve object paths:
 
 #### ConstantsParser Error Handling
 
-
 ```javascript
 try {
   const parsed = ConstantsParser.parseConstants(invalidYaml);
 } catch (error) {
   console.error('Parsing failed:', error.message);
   // Error logged and re-thrown as generic "Failed to parse constants"
-
-
-```javascript
+}
+```
 
 #### Input Validation
 
@@ -319,6 +316,7 @@ console.log(validatedManifest.id); // "my-module"
 - **Presence Validation**: Verifies all required attributes exist in manifest
 
 **Manifest Structure Validation:**
+
 ```javascript
 // Valid manifest - object with required properties
 const validManifest = {
@@ -340,6 +338,7 @@ const invalidManifests = [
 ```
 
 **Immutability Enforcement:**
+
 ```javascript
 const parser = new ManifestParser(manifestData);
 const frozen = parser.getValidatedManifest();
@@ -395,6 +394,7 @@ const validated = parser.getValidatedManifest();
 ```
 
 **Step-by-Step Validation:**
+
 ```javascript
 const parser = new ManifestParser(manifestData);
 
@@ -409,6 +409,7 @@ const result = parser.getValidatedManifest();
 ```
 
 **Real-World Manifest Processing:**
+
 ```javascript
 // Complex manifest with nested objects
 const complexManifest = {
@@ -570,7 +571,7 @@ npm test -- --testPathPattern="manifestParser.unit.test.js"
 
 ## Dependencies Graph
 
-```
+``` text
 ConstantsBuilder
 ├── ConstantsGetter
 │   ├── fs (Node.js)

@@ -127,6 +127,11 @@ class ConfigValidator {
   }
 }
 
+/**
+ * Calculate a simple hash of a file for caching purposes.
+ * @param {string} filePath - Path to the file to hash
+ * @returns {string} Simple hash combining file length, first/last chars, and mtime
+ */
 function calculateFileHash(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   let hash = content.length.toString(36);
@@ -139,6 +144,14 @@ function calculateFileHash(filePath) {
   return hash;
 }
 
+/**
+ * Validate with caching support using file hashes to avoid re-validation.
+ * @param {string} configPath - Path to the configuration file
+ * @param {string} schemaPath - Path to the schema file
+ * @param {string} cacheDir - Cache directory path
+ * @param {ConfigValidator} validator - Validator instance to use
+ * @returns {object} Validation result with valid/invalid status and errors
+ */
 function validateConfigWithCache(configPath, schemaPath, cacheDir, validator = new ConfigValidator({ schemaPath })) {
   const defaultCacheDir = process.env.TMPDIR || process.env.TMP || '/tmp';
   const actualCacheDir = cacheDir || defaultCacheDir;
@@ -177,4 +190,9 @@ function validateConfigWithCache(configPath, schemaPath, cacheDir, validator = n
   return { ...result, cached: false };
 }
 
+/**
+ * @export ConfigValidator - Main configuration validator class
+ * @export validateConfigWithCache - Validation with caching support
+ * @export calculateFileHash - File hash calculation utility
+ */
 export { ConfigValidator, validateConfigWithCache, calculateFileHash };

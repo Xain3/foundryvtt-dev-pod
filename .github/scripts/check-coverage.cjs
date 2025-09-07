@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * @file check-coverage.cjs
+ * @description Check test coverage against defined thresholds per folder
+ * @path .github/scripts/check-coverage.cjs
+ */
+
 const fs = require('fs');
 const path = require('path');
 

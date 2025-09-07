@@ -1,215 +1,196 @@
-# FoundryVTT Dev Pod CLI
+# FoundryVTT Dev Pod CLI <!-- omit in toc -->
 
 Minimal CLI for working with local multi-version Foundry containers during module development.
+
+## Overview <!-- omit in toc -->
+
+This repo provides a set of scripts to generate Docker Compose configurations, manage Foundry VTT development pods, and validate configuration files.
+It leverages Docker for containerization and supports multiple Foundry versions thanks to the excellent [felddy/foundryvtt-docker](https://github.com/felddy/foundryvtt-docker) project.
+
+**Contents:**
+
+- [Quickstart](#quickstart)
+- [Concepts](#concepts)
+- [Generated Defaults (container-config mode)](#generated-defaults-container-config-mode)
+- [CLI Reference](#cli-reference)
+  - [`fvtt-compose-gen` (`scripts/generate-compose.js`)](#fvtt-compose-gen-scriptsgenerate-composejs)
+  - [`fvtt-pod` (`scripts/pod-handler.sh`)](#fvtt-pod-scriptspod-handlersh)
+  - [`scripts/validate-config.js`](#scriptsvalidate-configjs)
+  - [`scripts/validate-package-json.js`](#scriptsvalidate-package-jsonjs)
+  - [`scripts/validate-package.sh`](#scriptsvalidate-packagesh)
+- [Configuration Validation \& Caching](#configuration-validation--caching)
+- [Secrets Modes](#secrets-modes)
+- [Builder Service](#builder-service)
+- [Development Workflow](#development-workflow)
+- [Testing \& Coverage](#testing--coverage)
+- [Publishing Note](#publishing-note)
+- [Acknowledgments](#acknowledgments)
 
 ## Quickstart
 
 - Generate compose from `container-config.json`:
 
-```zsh
-npx fvtt-compose-gen -c container-config.json -o compose.dev.yml
-```
+  ```zsh
+  npx fvtt-compose-gen -c container-config.json -o compose.dev.yml
+  ```
 
 - Start services and tail logs:
 
-```zsh
-npx fvtt-pod up -d
-npx fvtt-pod logs -f foundry-v13
+  ```zsh
+  npx fvtt-pod up -d
+  npx fvtt-pod logs -f foundry-v13
+  ```
+
+## Concepts
+
+Two config input shapes are supported by `fvtt-compose-gen`:
+
+1. Container config (recommended) – single source of truth (`container-config.json`) that drives install lists (systems/modules/worlds) and version-specific composition parameters.
+2. Advanced compose config – explicit compose-like JSON (`compose.config.json`) giving direct control over service entries (rare / power users).
+
+## Generated Defaults (container-config mode)
+
+- Service name pattern: `foundry-v<NN>`
+- Version directory: `v<NN>`
+- Port mapping: host `30000+<NN>` -> container `30000`
+- Image tag: numeric version unless template overrides
+- Fetch stagger seconds: v13=4, v12=2, others=0
+- Volumes: data volume + binds for config, dist, patches, shared, resources, cache
+- Builder service: included unless disabled (image defaults to `node:20-alpine`)
+
+## CLI Reference
+
+### `fvtt-compose-gen` (`scripts/generate-compose.js`)
+
+Flags:
+
+```text
+-c, --config <file>          Config file path (default: container-config.json)
+-o, --out <file>             Write output to file (omit => stdout)
+--print                      Force stdout output
+--dry-run, -n                Show actions without writing
+--secrets-mode <mode>        file|external|gcp|azure|aws|none|auto (default: auto)
+--secrets-file <file>        Path for file secrets mode (./secrets.json)
+--secrets-external <name>    External secret name (docker/Swarm)
+--secrets-target <path>      In-container target (default: config.json)
+--secrets-gcp-project <id>   GCP project id
+--secrets-gcp-secret <name>  GCP Secret Manager name
+--secrets-azure-vault <v>    Azure Key Vault name
+--secrets-azure-secret <n>   Azure secret name
+--secrets-aws-region <r>     AWS region
+--secrets-aws-secret <n>     AWS Secrets Manager name
 ```
 
-## Configuration Validation
+Environment overrides (same semantics as flags):
 
-Both `fvtt-compose-gen` and `fvtt-pod` automatically validate your `container-config.json` file against structural requirements before processing. The validation ensures your configuration has all required properties and proper structure.
-
-### What gets validated
-
-- **Required top-level properties**: `systems`, `modules`, `versions`
-- **Component validation**: Each system/module must have a `name` and either `manifest` or `path`
-- **Version structure**: Version configs must include required `install` sections with `systems` and `modules` objects
-
-### Validation in action
-
-**Valid configuration passes silently**:
-
-```zsh
-npx fvtt-compose-gen -c container-config.json --dry-run
-# [dry-run] Would generate compose YAML from config: /path/to/container-config.json
+```text
+COMPOSE_BASE_IMAGE
+COMPOSE_USER
+COMPOSE_BUILDER_ENABLED
+COMPOSE_BUILDER_IMAGE
+COMPOSE_SECRETS_MODE
+COMPOSE_SECRETS_FILE
+COMPOSE_SECRETS_EXTERNAL_NAME
+COMPOSE_SECRETS_TARGET
+COMPOSE_SECRETS_GCP_PROJECT
+COMPOSE_SECRETS_GCP_SECRET
+COMPOSE_SECRETS_AZURE_VAULT
+COMPOSE_SECRETS_AZURE_SECRET
+COMPOSE_SECRETS_AWS_REGION
+COMPOSE_SECRETS_AWS_SECRET
 ```
 
-**Invalid configuration is caught early**:
+### `fvtt-pod` (`scripts/pod-handler.sh`)
 
-```zsh
-npx fvtt-compose-gen -c bad-config.json --dry-run
-# Configuration validation failed:
-#   /systems/my-system: must have either "manifest" or "path" property
-#   /versions/13: must have required property "install"
+```text
+-f, --file <compose.yml>     Compose file (default resolution: ./compose.dev.yml)
+--dry-run, -n                Show docker compose commands only
 ```
 
-### Standalone validation tool
+Commands:
 
-You can also validate configurations directly:
-
-```zsh
-# Validate a config file
-npx scripts/validate-config.js container-config.json
-
-# Skip caching for fresh validation
-npx scripts/validate-config.js container-config.json --no-cache
+```text
+up [-d]
+start <SERVICE>
+down
+restart <SERVICE>
+build [SERVICE]
+pull
+ps
+logs [-f] [SERVICE]
+exec <SERVICE> [CMD]
+shell <SERVICE>
+run-builder
+stop-builder
+help
 ```
 
-### Caching
+### `scripts/validate-config.js`
 
-The `fvtt-pod` command caches validation results to avoid repeated checks until your configuration changes. You'll see a "Validating container configuration..." message only when validation is actually performed.
-
-## Secrets modes
-
-Control how credentials are passed into containers during generation.
-
-NOTE: Cloud provider modes (gcp, azure, aws) are currently experimental and untested. Interfaces and behavior may change; use with caution and validate outputs before relying on them in production.
-
-- `file` (default):
-  - `--secrets-file ./secrets.json` and mounted in containers as `/run/secrets/config.json`.
-- `external`:
-  - `--secrets-external foundry_secrets` references an external secret managed by Docker/Swarm.
-- `gcp` (experimental):
-  - `--secrets-gcp-project my-project --secrets-gcp-secret foundry-config` retrieves secrets from Google Cloud Secret Manager.
-- `azure` (experimental):
-  - `--secrets-azure-vault my-vault --secrets-azure-secret foundry-config` retrieves secrets from Azure Key Vault.
-- `aws` (experimental):
-  - `--secrets-aws-region us-east-1 --secrets-aws-secret foundry-config` retrieves secrets from AWS Secrets Manager.
-- `none`:
-  - Omits secrets; use `env_file`/`environment` in compose instead.
-
-### Google Cloud Platform (GCP) integration
-
-The `gcp` mode retrieves secrets directly from Google Cloud Secret Manager:
-
-```zsh
-# Using explicit GCP mode
-npx fvtt-compose-gen -c container-config.json -o compose.yml \
-  --secrets-mode gcp \
-  --secrets-gcp-project my-foundry-project \
-  --secrets-gcp-secret foundry-credentials
-
-# Auto-detection (if project and secret are provided, GCP mode is used automatically)
-npx fvtt-compose-gen -c container-config.json -o compose.yml \
-  --secrets-gcp-project my-foundry-project \
-  --secrets-gcp-secret foundry-credentials
+```text
+Usage: validate-config.js <config-path> [cache-dir] [--no-cache]
 ```
 
-**Prerequisites for GCP mode:**
+- `--no-cache`: force fresh validation
 
-- `gcloud` CLI installed and authenticated (`gcloud auth login`)
-- Appropriate permissions to access the specified secret in Secret Manager
-- Secret should contain JSON with Foundry VTT credentials
+### `scripts/validate-package-json.js`
 
-### Microsoft Azure integration
+No flags. Validates `package.json` against SchemaStore. Use `USE_LOCAL_SCHEMA=1` to force local schema fallback (`schemas/package.schema.json`).
 
-The `azure` mode retrieves secrets directly from Azure Key Vault:
+### `scripts/validate-package.sh`
 
-```zsh
-# Using explicit Azure mode
-npx fvtt-compose-gen -c container-config.json -o compose.yml \
-  --secrets-mode azure \
-  --secrets-azure-vault my-foundry-vault \
-  --secrets-azure-secret foundry-credentials
+Runs: schema validation -> `npm pack --dry-run` -> `npm publish --dry-run` -> optional `npm-package-json-lint`.
 
-# Auto-detection (if vault and secret are provided, Azure mode is used automatically)
-npx fvtt-compose-gen -c container-config.json -o compose.yml \
-  --secrets-azure-vault my-foundry-vault \
-  --secrets-azure-secret foundry-credentials
+## Configuration Validation & Caching
+
+Validation occurs automatically when a container-config shaped file is supplied. Cached results (hash-based) skip repeated work until the file changes. To bypass cache: `--no-cache` in direct script usage.
+
+Failure output example:
+
+```text
+Configuration validation failed:
+  /systems/my-system: must have either "manifest" or "path" property
 ```
 
-**Prerequisites for Azure mode:**
+## Secrets Modes
 
-- `az` CLI installed and authenticated (`az login`)
-- Appropriate permissions to access the specified Key Vault and secret
-- Secret should contain JSON with Foundry VTT credentials
+Modes: `file`, `external`, `gcp` (experimental), `azure` (experimental), `aws` (experimental), `none`, or `auto` (auto-detects based on provided flags/env). Experimental cloud modes write a temp file in `/tmp` containing the retrieved secret content, then mount it as a compose secret.
 
-### Amazon Web Services (AWS) integration
-
-The `aws` mode retrieves secrets directly from AWS Secrets Manager:
+Example (AWS auto-detect):
 
 ```zsh
-# Using explicit AWS mode
-npx fvtt-compose-gen -c container-config.json -o compose.yml \
-  --secrets-mode aws \
-  --secrets-aws-region us-east-1 \
-  --secrets-aws-secret foundry-credentials
-
-# Auto-detection (if region and secret are provided, AWS mode is used automatically)
 npx fvtt-compose-gen -c container-config.json -o compose.yml \
   --secrets-aws-region us-east-1 \
   --secrets-aws-secret foundry-credentials
 ```
 
-**Prerequisites for AWS mode:**
+## Builder Service
 
-- `aws` CLI installed and configured (`aws configure` or IAM roles)
-- Appropriate permissions to access the specified secret in Secrets Manager
-- Secret should contain JSON with Foundry VTT credentials
+A lightweight Node image (`node:20-alpine` by default) included as `builder` for tasks like installing dependencies or compiling assets. Disable with `COMPOSE_BUILDER_ENABLED=0` or by setting `builder.enabled: false` in composition params.
 
-**Example secret content for all cloud providers:**
-
-```json
-{
-  "foundry_username": "your-foundry-username",
-  "foundry_password": "your-foundry-password",
-  "foundry_license_key": "your-license-key"
-}
-```
-
-Flags or env vars:
-
-- Flags: `--secrets-mode`, `--secrets-file`, `--secrets-external`, `--secrets-target`, `--secrets-gcp-project`, `--secrets-gcp-secret`, `--secrets-azure-vault`, `--secrets-azure-secret`, `--secrets-aws-region`, `--secrets-aws-secret`
-- Env: `COMPOSE_SECRETS_MODE`, `COMPOSE_SECRETS_FILE`, `COMPOSE_SECRETS_EXTERNAL_NAME`, `COMPOSE_SECRETS_TARGET`, `COMPOSE_SECRETS_GCP_PROJECT`, `COMPOSE_SECRETS_GCP_SECRET`, `COMPOSE_SECRETS_AZURE_VAULT`, `COMPOSE_SECRETS_AZURE_SECRET`, `COMPOSE_SECRETS_AWS_REGION`, `COMPOSE_SECRETS_AWS_SECRET`
-
-## Pod helper
-
-- Default compose file path: `compose.dev.yml` (from repo root)
-- Custom compose file:
-
-```zsh
-npx fvtt-pod -f ./compose.dev.nonroot.yml up -d
-```
-
-## Safety
-
-- This package is marked `private: true` in `package.json`. Remove that, set a unique name, add a license, then `npm publish --access public` if you choose to publish.
-- Review `patches/README.md` for patch details.
-
-## Acknowledgments
-
-This tooling wraps and orchestrates development workflows around the excellent `felddy/foundryvtt-docker` image:
-
-- [felddy/foundryvtt-docker](https://github.com/felddy/foundryvtt-docker)
-
-Please refer to that project for base image details, environment variables, and licensing.
-
-## CI & Coverage
-
-- Pull requests into `master`/`main` run tests via GitHub Actions (Node 18).
-- Coverage is generated by Jest. A per-folder gate enforces minimums using `.github/constants/thresholds.json`.
-- Workflow file: `.github/workflows/pr-test-coverage.yml`.
-
-Local run:
+## Development Workflow
 
 ```zsh
 npm install
-npm run test:ci
-npm run check-coverage
+npm run test            # lint + unit tests
+npm run test:ci         # lint + tests + coverage
+npm run check-coverage  # enforce per-path thresholds
+npm run lint            # eslint only
+npm run validate:package
 ```
 
-Configure thresholds:
+## Testing & Coverage
 
-- Edit `.github/constants/thresholds.json` to add/update rules.
-- Each rule supports:
-  - `name`: label for reporting
-  - `match_mode`: `prefix` (default) or `regex`
-  - `match`: path prefix or regex
-  - `min`: required `{ branches, functions, lines, statements }`
+Jest runs with ESM support (`--experimental-vm-modules`). Coverage thresholds enforced by `.github/constants/thresholds.json` using a custom checker script.
 
-Environment overrides:
+## Publishing Note
 
-- `THRESHOLDS_FILE`: alternate thresholds JSON path
-- `COVERAGE_SUMMARY`: path to `coverage-summary.json` if non-standard
+Package currently marked private? (Remove `private` if you intend to publish; ensure unique name & license compliance.)
+
+## Acknowledgments
+
+This tooling wraps the excellent `felddy/foundryvtt-docker` image. See that project for underlying image behavior and licensing.
+
+---
+
+For deeper examples (multi-version installs, secrets, non-root compose variants) see `examples/` and script-level README under `scripts/`.

@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * @file use-cache-or-stagger.mjs
+ * @description Uses cached Foundry release or implements staggered download with jitter
+ * @path patches/common/use-cache-or-stagger.mjs
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import * as f from "./helpers/common.mjs";

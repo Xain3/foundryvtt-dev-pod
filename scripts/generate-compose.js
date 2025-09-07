@@ -185,7 +185,7 @@ function parseArgs(argv) {
   return args;
 }
 
-let __secretTempCounter = 0;
+let secretTempCounter = 0;
 /**
  * Generate a monotonic (time + counter) numeric string id used for temp secret file names.
  * Bounded counter ensures predictable length in tests.
@@ -194,8 +194,8 @@ let __secretTempCounter = 0;
 function nextTempId() {
   const now = Date.now();
   const upperBoundHex = 0xffff; // prevent unbounded growth
-  __secretTempCounter = (__secretTempCounter + 1) & upperBoundHex; // bounded
-  return `${now}${__secretTempCounter}`; // digits only for tests
+  secretTempCounter = (secretTempCounter + 1) & upperBoundHex; // bounded
+  return `${now}${secretTempCounter}`; // digits only for tests
 }
 
 /**
@@ -332,70 +332,70 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
     };
   }
 
-	if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
-		const name = opts.secretsExternalName || 'config_json';
-		return {
-			topLevel: { [name]: { external: true } },
-			serviceRef: [ { source: name, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+  if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
+    const name = opts.secretsExternalName || 'config_json';
+    return {
+      topLevel: { [name]: { external: true } },
+      serviceRef: [ { source: name, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
 
-	if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
-		console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
-		const secretName = 'config_json_gcp';
-		const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
+  if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
+    console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
+    const secretName = 'config_json_gcp';
+    const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
 
-		// Create a temporary file with the GCP secret content
-		try {
-			const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
-			fs.writeFileSync(gcpSecretFile, secretContent, 'utf8');
-		} catch (error) {
-			throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
-		}
+    // Create a temporary file with the GCP secret content
+    try {
+      const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
+      fs.writeFileSync(gcpSecretFile, secretContent, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
+    }
 
-		return {
-			topLevel: { [secretName]: { file: gcpSecretFile } },
-			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+    return {
+      topLevel: { [secretName]: { file: gcpSecretFile } },
+      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
 
-	if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
-		console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
-		const secretName = 'config_json_azure';
-		const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
+  if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
+    console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
+    const secretName = 'config_json_azure';
+    const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
 
-		// Create a temporary file with the Azure secret content
-		try {
-			const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
-			fs.writeFileSync(azureSecretFile, secretContent, 'utf8');
-		} catch (error) {
-			throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
-		}
+    // Create a temporary file with the Azure secret content
+    try {
+      const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
+      fs.writeFileSync(azureSecretFile, secretContent, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
+    }
 
-		return {
-			topLevel: { [secretName]: { file: azureSecretFile } },
-			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+    return {
+      topLevel: { [secretName]: { file: azureSecretFile } },
+      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
 
-	if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
-		console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
-		const secretName = 'config_json_aws';
-		const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
+  if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
+    console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
+    const secretName = 'config_json_aws';
+    const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
 
-		// Create a temporary file with the AWS secret content
-		try {
-			const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
-			fs.writeFileSync(awsSecretFile, secretContent, 'utf8');
-		} catch (error) {
-			throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
-		}
+    // Create a temporary file with the AWS secret content
+    try {
+      const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
+      fs.writeFileSync(awsSecretFile, secretContent, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
+    }
 
-		return {
-			topLevel: { [secretName]: { file: awsSecretFile } },
-			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-		};
-	}
+    return {
+      topLevel: { [secretName]: { file: awsSecretFile } },
+      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+    };
+  }
   // fallthrough to unified secrets logic below
   // No other modes matched; default to file mode fallback using provided secretsFile
   if (opts.secretsFile) {
