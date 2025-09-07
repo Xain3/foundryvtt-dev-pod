@@ -8,6 +8,13 @@
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Maximum directory search depth when scanning for coverage-summary.json
+ * relative to the repository root.
+ * This avoids deep traversal into node_modules or .git directories.
+ */
+const MAX_SEARCH_DEPTH = 4;
+
 function readCoverageSummary(filePath) {
   if (fs.existsSync(filePath)) {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -118,9 +125,10 @@ function findCoverageSummary() {
         if (entry.name === 'node_modules' || entry.name === '.git') continue;
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          // Only descend a limited depth: relative depth <= 4
+          const max_search_depth = process.env.MAX_SEARCH_DEPTH ? Number(process.env.MAX_SEARCH_DEPTH) : MAX_SEARCH_DEPTH;
+          // Only descend a limited depth: relative depth <= max_search_depth
           const depth = full.replace(searchRoot, '').split(path.sep).filter(Boolean).length;
-            if (depth <= 4) queue.push(full);
+          if (depth <= max_search_depth) queue.push(full);
         } else if (entry.name === 'coverage-summary.json' && /coverage/.test(full)) {
           foundPath = full;
           break;
