@@ -106,6 +106,35 @@ function findCoverageSummary() {
     if (data) return { data, path: resolved };
   }
 
+  // Fallback: scan repo root for any coverage-summary.json (avoid deep traversal in node_modules/.git)
+  const searchRoot = path.resolve(__dirname, '..', '..');
+  let foundPath = null;
+  try {
+    const queue = [searchRoot];
+    while (queue.length && !foundPath) {
+      const dir = queue.shift();
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name === 'node_modules' || entry.name === '.git') continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          // Only descend a limited depth: relative depth <= 4
+          const depth = full.replace(searchRoot, '').split(path.sep).filter(Boolean).length;
+            if (depth <= 4) queue.push(full);
+        } else if (entry.name === 'coverage-summary.json' && /coverage/.test(full)) {
+          foundPath = full;
+          break;
+        }
+      }
+    }
+  } catch {
+    // ignore scanning errors
+  }
+  if (foundPath) {
+    const data = readCoverageSummary(foundPath);
+    if (data) return { data, path: foundPath };
+  }
+
   return { data: null, tried: candidates.map((c) => path.resolve(c)) };
 }
 
