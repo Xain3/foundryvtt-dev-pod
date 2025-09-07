@@ -475,7 +475,6 @@ function retrieveAwsSecret(region, secretName, execFn = execFileSync) {
     throw new Error(`AWS secret retrieval failed (region=${r}, secret=${s}): ${err.message}`);
   }
 }
-}
 
 /**
  * Convert an object of key/value pairs into an array of key=value strings for compose.
