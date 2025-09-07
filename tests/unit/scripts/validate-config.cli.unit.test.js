@@ -9,7 +9,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function runNode(args, opts = {}) {
   try {
-    return childProcess.execSync(`node ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+    // Naively split by space; use a proper argv parser if args can include spaces/quotes
+    const argsArray = args.split(' ');
+    return childProcess.execFileSync('node', argsArray, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
   } catch (error) {
     throw error;
   }
