@@ -261,12 +261,29 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 	};
 }
 
-function retrieveGcpSecret(project, secretName) {
-	return execFileSync(
-		"gcloud",
-		["secrets", "versions", "access", "latest", "--secret=" + secretName, "--project=" + project],
-		{ encoding: 'utf8' }
-	);
+/**
+ * Retrieve a secret's latest version from GCP Secret Manager.
+ * @param {string} project GCP project ID
+ * @param {string} secretName Secret name in Secret Manager
+ * @param {Function} [execFn=execFileSync] Internal: injectable exec function for tests
+ * @returns {string} Secret value (utf8 string)
+ * @export
+ */
+function retrieveGcpSecret(project, secretName, execFn = execFileSync) {
+	if (typeof project !== 'string' || !project.trim()) {
+		throw new Error('GCP project must be a non-empty string');
+	}
+	if (typeof secretName !== 'string' || !secretName.trim()) {
+		throw new Error('GCP secret name must be a non-empty string');
+	}
+	const trimmedProject = project.trim();
+	const trimmedSecret = secretName.trim();
+	const args = [
+		'secrets', 'versions', 'access', 'latest',
+		`--secret=${trimmedSecret}`,
+		`--project=${trimmedProject}`
+	];
+	return execFn('gcloud', args, { encoding: 'utf8' });
 }
 
 function retrieveAzureSecret(vaultName, secretName) {
