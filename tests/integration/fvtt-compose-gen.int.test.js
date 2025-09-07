@@ -171,23 +171,29 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
     });
 
     test('uses default config file when not specified', () => {
-      // Create default config file in temp directory
-      const defaultConfigPath = path.join(tempDir, 'container-config.json');
+      // Create default config file in repo root where the binary expects it
+      const repoRoot = path.resolve(__dirname, '../..');
+      const defaultConfigPath = path.join(repoRoot, 'container-config.json');
       const config = {
         systems: {},
         modules: {},
         versions: { '13': { install: { systems: {}, modules: {} } } }
       };
-      fs.writeFileSync(defaultConfigPath, JSON.stringify(config, null, 2));
+      
+      // Only create the file if it doesn't exist (don't overwrite existing)
+      const fileExists = fs.existsSync(defaultConfigPath);
+      if (!fileExists) {
+        fs.writeFileSync(defaultConfigPath, JSON.stringify(config, null, 2));
+      }
 
-      // Change working directory to temp dir and run without -c flag
-      const originalCwd = process.cwd();
       try {
-        process.chdir(tempDir);
         const output = runComposeGen(['--dry-run']);
         expect(output).toContain('[dry-run]');
       } finally {
-        process.chdir(originalCwd);
+        // Clean up temp file if we created it
+        if (!fileExists && fs.existsSync(defaultConfigPath)) {
+          fs.unlinkSync(defaultConfigPath);
+        }
       }
     });
 
