@@ -503,7 +503,8 @@ function buildComposeFromContainerConfig(containerCfg, opts = {}, secretsConf) {
   const versions = containerCfg.versions || {};
   for (const [ver, conf] of Object.entries(versions)) {
     if (conf?.supported === false) continue;
-    const intVer = parseInt(ver, 10); if (Number.isNaN(intVer)) continue;
+    const intVer = parseInt(ver, 10);
+    if (Number.isNaN(intVer)) continue;
     const compParams = conf.composition_params || {};
     const derived = deriveVersionDefaults(versionParams, intVer, compParams);
     volumes[`${derived.name}-data`] = null;
