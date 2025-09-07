@@ -19,11 +19,19 @@
 - What changed, high level
 - Key files / modules
 
-## Changes
+## Key Changes
+
+### Change 1
 
 - High-level areas changed (e.g. `patches/`, `entrypoint/`, `scripts/`, `tests/`, `docs/`)
+- Rationale for approach, tradeoffs, alternatives considered
 
-## Tests
+### Change 2
+
+- See above
+
+
+## Testing
 
 - How to run and what to expect
 
@@ -40,6 +48,8 @@ npm run check-coverage
 ## Docs
 
 - What docs were updated (README, docs/, examples/, directory README)
+
+## File modified (optional)
 
 ## PR Checklist
 
