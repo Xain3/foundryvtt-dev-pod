@@ -9,13 +9,13 @@
  * Generate docker compose YAML from a JSON config.
  *
  * Supports two input shapes:
- * 1) Container config (recommended): `container-config.json` — the single source of truth used by runtime patches
- * 2) Advanced compose config: `compose.config.json` — direct control over services with explicit fields
+ * 1) Container config (recommended): `container-config.json` - the single source of truth used by runtime patches
+ * 2) Advanced compose config: `compose.config.json` - direct control over services with explicit fields
  *
  * CLI usage (zsh):
- *  node scripts/generate-compose.js -c container-config.json -o compose.dev.yml
- *  node scripts/generate-compose.js --print               # print to stdout
- *  node scripts/generate-compose.js --dry-run             # show what would be done
+ *   node scripts/generate-compose.js -c container-config.json -o compose.dev.yml
+ *   node scripts/generate-compose.js --print
+ *   node scripts/generate-compose.js --dry-run
  *
  * Options:
  *  -c, --config <file>     Path to config file (default: container-config.json)
@@ -51,7 +51,7 @@
  *
  * Defaults (container-config mode):
  *  - Service name: foundry-v<NN>, dir: v<NN>, port: 30000+<NN>
- *  - Image tag: >= v13 -> :release; v12 -> :12; v11 -> :11 (subject to image availability)
+ *  - Image tag: numeric version unless tag template provided
  *  - FETCH_STAGGER_SECONDS: v13=4, v12=2, else 0
  *  - Binds mirror static compose: config file, dist, patches, shared, resources, and cache
  *
