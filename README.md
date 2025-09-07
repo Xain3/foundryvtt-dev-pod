@@ -179,6 +179,36 @@ npm run lint            # eslint only
 npm run validate:package
 ```
 
+### Using Path Aliases
+
+This project supports path aliases for cleaner imports and better IDE support:
+
+**IntelliSense Support (jsconfig.json):**
+- `#/*` - Project root
+- `#scripts/*` - Scripts directory  
+- `#helpers/*` - Helper modules
+- `#config/*` - Configuration files
+- `#patches/*` - Patch system
+- `#patches/entrypoint/*` - Patch entry points
+- `#patches/common/*` - Common patch utilities
+- `#tests/unit/*` - Unit tests
+- `#tests/integration/*` - Integration tests
+- `#docs/*` - Documentation
+- `#examples/*` - Example configurations
+- `#schemas/*` - JSON schemas
+
+**Package Exports:**
+External projects can import modules using the package name:
+```javascript
+// Access config files
+const babelConfig = require('foundryvtt-dev-pod/babel.config.cjs');
+const jsConfig = require('foundryvtt-dev-pod/jsconfig.json');
+
+// Access any file in the project
+const validator = require('foundryvtt-dev-pod/helpers/config-validator');
+const example = require('foundryvtt-dev-pod/examples/container-config.json');
+```
+
 ## Testing & Coverage
 
 Jest runs with ESM support (`--experimental-vm-modules`). Coverage thresholds enforced by `.github/constants/thresholds.json` using a custom checker script.

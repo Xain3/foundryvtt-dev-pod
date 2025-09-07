@@ -24,9 +24,31 @@ Place it immediately after the shebang (`#!/usr/bin/env node`) if one exists.
 
 ## 2. Modules & Imports
 
-* Project uses **CommonJS**. Use `require` / `module.exports`.
-* Group requires: Node core, third-party, local modules.
+* Project uses **ESM modules** (`type: module`). Use `import` / `export`.
+* Group imports: Node core, third-party, local modules.
 * Avoid side-effect imports except polyfills or environment setup.
+* **Use path aliases** when available for cleaner imports:
+  ```javascript
+  // Preferred - using aliases
+  import validator from '#helpers/config-validator';
+  import config from '#config/constants';
+  
+  // Avoid - relative paths
+  import validator from '../../helpers/config-validator';
+  ```
+
+### Path Aliases Available
+
+* `#/*` - Project root
+* `#scripts/*` - CLI scripts
+* `#helpers/*` - Helper modules  
+* `#config/*` - Configuration
+* `#patches/*` - Patch system
+* `#tests/unit/*` - Unit tests
+* `#tests/integration/*` - Integration tests
+* `#docs/*` - Documentation
+* `#examples/*` - Examples
+* `#schemas/*` - JSON schemas
 
 ## 3. Naming
 

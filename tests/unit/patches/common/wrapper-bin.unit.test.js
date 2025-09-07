@@ -3,7 +3,7 @@ import os from 'node:os';
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { jest } from '@jest/globals';
-import { runBashScript } from '../../../utils/shell.js';
+import { runBashScript } from '#tests/utils/shell.js';
 
 jest.setTimeout(20000);
 

@@ -1,4 +1,4 @@
-import PathUtils from '../../../helpers/pathUtils.js';
+import PathUtils from '#helpers/pathUtils.js';
 import path from 'node:path';
 
 /**

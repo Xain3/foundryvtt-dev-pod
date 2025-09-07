@@ -85,6 +85,25 @@ Authoritative detail: `docs/code-style.md`. Snapshot reminders:
 * Avoid duplication of validation logic—reuse `helpers/config-validator.js`.
 * Shell patches: minimal; complex logic belongs in JS helpers.
 
+### Using Path Aliases
+
+The project provides path aliases for cleaner imports:
+
+**In your IDE** (jsconfig.json support):
+```javascript
+import validator from '#helpers/config-validator';
+import config from '#config/constants';
+import patch from '#patches/common/helper';
+```
+
+**For external packages** (package exports):
+```javascript
+const validator = require('foundryvtt-dev-pod/helpers/config-validator');
+const jsConfig = require('foundryvtt-dev-pod/jsconfig.json');
+```
+
+Use these aliases instead of relative paths (`../../helpers/...`) for better maintainability.
+
 ---
 
 ## Step 6: Test & Validate

@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jest } from '@jest/globals';
-import { runBashScript } from '../utils/shell.js';
+import { runBashScript } from '#tests/utils/shell.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

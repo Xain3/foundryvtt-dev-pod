@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import * as namedExports from '../../../../../patches/common/helpers/common.mjs';
-import defaultExport from '../../../../../patches/common/helpers/common.mjs';
+import * as namedExports from '#patches/common/helpers/common.mjs';
+import defaultExport from '#patches/common/helpers/common.mjs';
 
 describe('patches/common/helpers/common.mjs', () => {
   let common;

@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect } from '@jest/globals';
-import { retrieveAzureSecret, retrieveAwsSecret } from '../../../scripts/generate-compose.js';
+import { retrieveAzureSecret, retrieveAwsSecret } from '#scripts/generate-compose.js';
 
 function mockExec(expectedCmd, expectedArgs, output='value\n') {
   return (cmd, args, opts) => {

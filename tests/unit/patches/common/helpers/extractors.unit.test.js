@@ -6,7 +6,7 @@ import {
   extractTar,
   extractTarGz,
   extractArchiveNode
-} from '../../../../../patches/common/helpers/extractors.mjs';
+} from '#patches/common/helpers/extractors.mjs';
 
 function padToBlockSize(len, block = 512) {
   const pad = (block - (len % block)) % block;

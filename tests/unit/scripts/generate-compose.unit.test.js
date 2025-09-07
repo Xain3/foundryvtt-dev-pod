@@ -7,7 +7,7 @@ import yaml from 'js-yaml';
 import { jest } from '@jest/globals';
 
 // Import the module for unit testing individual functions
-import * as generateCompose from '../../../scripts/generate-compose.js';
+import * as generateCompose from '#scripts/generate-compose.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
