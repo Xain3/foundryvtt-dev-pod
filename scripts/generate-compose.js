@@ -193,7 +193,9 @@ let __secretTempCounter = 0;
  */
 function nextTempId() {
 	const now = Date.now();
-	__secretTempCounter = (__secretTempCounter + 1) & 0xffff; // bounded
+	// Prevent unbounded growth in long-running processes, thus ensuring predictable length in tests
+	const upperBoundHex = 0xffff;
+	__secretTempCounter = (__secretTempCounter + 1) & upperBoundHex; // bounded
 	return `${now}${__secretTempCounter}`; // digits only for tests
 }
 
@@ -445,7 +447,19 @@ function resolveTemplatedString(template, version) { return applyVersionTemplate
  * @returns {number|undefined} Resolved numeric value if valid
  * @export
  */
-function resolveTemplatedNumber(value, version) { if (typeof value === 'number') return value; if (typeof value === 'string') { const s = value.replaceAll(VERSION_PLACEHOLDER, String(version)); const n = Number(s); if (!Number.isNaN(n)) return n; } return undefined; }
+function resolveTemplatedNumber(value, version) {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const s = value.replaceAll(VERSION_PLACEHOLDER, String(version));
+    const n = Number(s);
+    if (!Number.isNaN(n)) {
+      return n;
+    }
+  }
+  return undefined;
+}
 
 /**
  * Build docker compose structure from explicit compose-style configuration (advanced mode).
@@ -604,7 +618,9 @@ function main() {
     console.log('[dry-run] Would generate compose YAML from config:', absConf);
     if (out) {
       const absOut = path.resolve(out); console.log(`[dry-run] Would write to: ${absOut}`);
-    } else console.log('[dry-run] Would write to: stdout');
+    } else {
+			console.log('[dry-run] Would write to: stdout');
+		}
     console.log(`[dry-run] Generated YAML size: ${yml.length} characters`);
     return;
   }
