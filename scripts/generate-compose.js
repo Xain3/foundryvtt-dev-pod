@@ -119,7 +119,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateConfig } from './validate-config.js';
 
@@ -262,11 +262,8 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
 }
 
 function retrieveGcpSecret(project, secretName) {
-	return execFileSync(
-		"gcloud",
-		["secrets", "versions", "access", "latest", "--secret=" + secretName, "--project=" + project],
-		{ encoding: 'utf8' }
-	);
+	const gcpCommand = `gcloud secrets versions access latest --secret="${secretName}" --project="${project}"`;
+	return execSync(gcpCommand, { encoding: 'utf8' });
 }
 
 function retrieveAzureSecret(vaultName, secretName) {

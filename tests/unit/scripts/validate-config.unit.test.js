@@ -18,10 +18,8 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function runNode(args, opts = {}) {
-  // Accept either a string or array as args
-  const argArr = Array.isArray(args) ? args : args.split(' ').filter(Boolean);
   try {
-    return childProcess.execFileSync('node', argArr, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+    return childProcess.execSync(`node ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
   } catch (error) {
     throw error;
   }
@@ -511,19 +509,19 @@ describe('scripts/validate-config.js', () => {
 
   describe('CLI interface', () => {
     test('shows help with --help flag', () => {
-      const output = runNode([scriptPath, '--help']);
+      const output = runNode(`${scriptPath} --help`);
       expect(output).toContain('Usage:');
       expect(output).toContain('config-path');
       expect(output).toContain('--no-cache');
     });
 
     test('shows help with -h flag', () => {
-      const output = runNode([scriptPath, '-h']);
+      const output = runNode(`${scriptPath} -h`);
       expect(output).toContain('Usage:');
     });
 
     test('shows help when no arguments provided', () => {
-      const output = runNode([scriptPath]);
+      const output = runNode(`${scriptPath}`);
       expect(output).toContain('Usage:');
     });
 
