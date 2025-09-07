@@ -217,6 +217,8 @@ const example = require('foundryvtt-dev-pod/examples/container-config.json');
 
 Jest runs with ESM support (`--experimental-vm-modules`). Coverage thresholds enforced by `.github/constants/thresholds.json` using a custom checker script.
 
+Note: CI uses a unified Jest run to generate coverage. The repository provides a `test:combined` script (used by `test:ci`) which runs Jest once across `tests/unit` and `tests/integration` with `--coverage` to produce a single consolidated `coverage/coverage-summary.json`. The `.github/scripts/check-coverage.cjs` checker will respect `COVERAGE_SUMMARY` if provided, attempt common coverage paths, and perform a bounded repo scan as a final fallback while printing diagnostic paths on failure.
+
 ### Editor (VSCode) Jest Setup
 
 The repo uses a multi-project Jest configuration (`jest.config.js`) that defines:
