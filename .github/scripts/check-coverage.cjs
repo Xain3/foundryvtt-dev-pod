@@ -9,12 +9,11 @@ const fs = require('fs');
 const path = require('path');
 
 function readCoverageSummary(filePath) {
-  if (!fs.existsSync(filePath)) {
-    console.error(`Coverage summary not found at: ${filePath}`);
-    process.exit(1);
+  if (fs.existsSync(filePath)) {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return data;
   }
-  const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  return data;
+  return null;
 }
 
 function normalizePath(p) {
@@ -86,9 +85,38 @@ function aggregate(files) {
   return { agg, pct };
 }
 
+function findCoverageSummary() {
+  const candidates = [];
+
+  if (process.env.COVERAGE_SUMMARY) candidates.push(process.env.COVERAGE_SUMMARY);
+
+  // Common location relative to current working directory
+  candidates.push(path.join(process.cwd(), 'coverage', 'coverage-summary.json'));
+
+  // When script is run from .github/scripts, move up to repo root
+  const repoRoot = path.resolve(__dirname, '..', '..');
+  candidates.push(path.join(repoRoot, 'coverage', 'coverage-summary.json'));
+
+  // Fallback: try one level up from repo root (in case of worktrees/CI checkout differences)
+  candidates.push(path.join(repoRoot, '..', 'coverage', 'coverage-summary.json'));
+
+  for (const c of candidates) {
+    const resolved = path.resolve(c);
+    const data = readCoverageSummary(resolved);
+    if (data) return { data, path: resolved };
+  }
+
+  return { data: null, tried: candidates.map((c) => path.resolve(c)) };
+}
+
 function main() {
-  const summaryPath = process.env.COVERAGE_SUMMARY || path.join(process.cwd(), 'coverage', 'coverage-summary.json');
-  const summary = readCoverageSummary(summaryPath);
+  const found = findCoverageSummary();
+  if (!found.data) {
+    console.error('Coverage summary not found. Tried the following paths:');
+    for (const p of found.tried) console.error(` - ${p}`);
+    process.exit(1);
+  }
+  const summary = found.data;
 
   const entries = Object.entries(summary)
     .filter(([k]) => k !== 'total')
