@@ -10,7 +10,20 @@
     },
     "./helpers/config-validator": "./helpers/config-validator.js",
     "./scripts/generate-compose": "./scripts/generate-compose.js",
-    "./scripts/validate-config": "./scripts/validate-config.js"
+    "./scripts/validate-config": "./scripts/validate-config.js",
+    "./babel.config.cjs": "./babel.config.cjs",
+    "./jsconfig.json": "./jsconfig.json",
+    "./scripts/*": "./scripts/*",
+    "./helpers/*": "./helpers/*",
+    "./config/*": "./config/*",
+    "./patches/*": "./patches/*",
+    "./patches/entrypoint/*": "./patches/entrypoint/*",
+    "./patches/common/*": "./patches/common/*",
+    "./tests/unit/*": "./tests/unit/*",
+    "./tests/integration/*": "./tests/integration/*",
+    "./docs/*": "./docs/*",
+    "./examples/*": "./examples/*",
+    "./schemas/*": "./schemas/*"
   },
   "bin": {
     "fvtt-compose-gen": "scripts/generate-compose.js",
@@ -22,6 +35,8 @@
     "scripts/validate-config.js",
     "helpers/",
     "patches/",
+    "babel.config.cjs",
+    "jsconfig.json",
     "README.md",
     "LICENSE"
   ],

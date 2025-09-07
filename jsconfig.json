@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "#scripts/*": ["./scripts/*"],
+      "#helpers/*": ["./helpers/*"],
+      "#config/*": ["./config/*"],
+      "#patches/*": ["./patches/*"],
+      "#patches/entrypoint/*": ["./patches/entrypoint/*"],
+      "#patches/common/*": ["./patches/common/*"],
+      "#tests/unit/*": ["./tests/unit/*"],
+      "#tests/integration/*": ["./tests/integration/*"],
+      "#docs/*": ["./docs/*"],
+      "#examples/*": ["./examples/*"],
+      "#schemas/*": ["./schemas/*"]
+    }
+  },
+  "include": [
+    "scripts/**/*",
+    "helpers/**/*",
+    "config/**/*",
+    "patches/**/*",
+    "tests/**/*",
+    "docs/**/*",
+    "examples/**/*",
+    "schemas/**/*",
+    "*.js",
+    "*.mjs",
+    "*.cjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "coverage",
+    "dist",
+    ".git"
+  ]
+}
