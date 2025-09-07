@@ -733,5 +733,36 @@ export {
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  try { main(); } catch (e) { console.error(e?.stack || String(e)); process.exit(1); }
+  try { main(); } catch (e) {
+    function isProduction() {
+      return process.env.NODE_ENV === 'production';
+    }
+
+    function redactSensitive(str) {
+      if (!str) return str;
+      const SENSITIVE_KEYS = [
+      'TOKEN', 'PASSWORD', 'SECRET', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
+      'AZURE_CLIENT_SECRET', 'GOOGLE_APPLICATION_CREDENTIALS'
+      ];
+      let out = String(str);
+      for (const [k, v] of Object.entries(process.env)) {
+      if (!v || typeof v !== 'string') continue;
+      if (!SENSITIVE_KEYS.some(sk => k.toUpperCase().includes(sk))) continue;
+      const esc = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      out = out.replace(new RegExp(esc, 'g'), '***');
+      }
+      return out;
+    }
+
+    function formatError(e) {
+      if (isProduction()) {
+      const msg = (e && e.message) ? redactSensitive(e.message) : 'Unexpected error';
+      return `Error: ${msg}`;
+      }
+      return redactSensitive(e && e.stack ? e.stack : String(e));
+    }
+
+    console.error(formatError(e));
+    process.exit(1);
+  }
 }
