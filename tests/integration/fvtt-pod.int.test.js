@@ -335,7 +335,7 @@ volumes:
           fs.chmodSync(restrictedFile, 0o644);
         } catch (e) {
           // Ignore cleanup errors
-          // If chmod fails (e.g., on some CI systems), skip this test
+          // Ignore cleanup errors (e.g., if chmod fails on some CI systems)
           console.warn('cleanup chmod failed, skipping permission test:', e);
         }
       }
