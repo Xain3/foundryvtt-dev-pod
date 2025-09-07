@@ -119,7 +119,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateConfig } from './validate-config.js';
 
@@ -383,9 +383,18 @@ function retrieveGcpSecret(project, secretName, execFn = execFileSync) {
  * @returns {string} Secret value
  * @export
  */
-function retrieveAzureSecret(vaultName, secretName) {
-	const azureCommand = `az keyvault secret show --vault-name "${vaultName}" --name "${secretName}" --query value --output tsv`;
-	return execSync(azureCommand, { encoding: 'utf8' });
+function retrieveAzureSecret(vaultName, secretName, execFn = execFileSync) {
+  if (typeof vaultName !== 'string' || !vaultName.trim()) throw new Error('Azure vault name must be a non-empty string');
+  if (typeof secretName !== 'string' || !secretName.trim()) throw new Error('Azure secret name must be a non-empty string');
+  const v = vaultName.trim();
+  const s = secretName.trim();
+  const args = ['keyvault', 'secret', 'show', '--vault-name', v, '--name', s, '--query', 'value', '--output', 'tsv'];
+  try {
+    const out = execFn('az', args, { encoding: 'utf8', timeout: 8000, env: { ...process.env, AZURE_CORE_ONLY_SHOW_ERRORS: '1' } });
+    return typeof out === 'string' ? out.trimEnd() : out;
+  } catch (err) {
+    throw new Error(`Azure secret retrieval failed (vault=${v}, secret=${s}): ${err.message}`);
+  }
 }
 
 /**
@@ -395,9 +404,18 @@ function retrieveAzureSecret(vaultName, secretName) {
  * @returns {string} Secret JSON/string value
  * @export
  */
-function retrieveAwsSecret(region, secretName) {
-	const awsCommand = `aws secretsmanager get-secret-value --region "${region}" --secret-id "${secretName}" --query SecretString --output text`;
-	return execSync(awsCommand, { encoding: 'utf8' });
+function retrieveAwsSecret(region, secretName, execFn = execFileSync) {
+  if (typeof region !== 'string' || !region.trim()) throw new Error('AWS region must be a non-empty string');
+  if (typeof secretName !== 'string' || !secretName.trim()) throw new Error('AWS secret name must be a non-empty string');
+  const r = region.trim();
+  const s = secretName.trim();
+  const args = ['secretsmanager', 'get-secret-value', '--region', r, '--secret-id', s, '--query', 'SecretString', '--output', 'text'];
+  try {
+    const out = execFn('aws', args, { encoding: 'utf8', timeout: 8000, env: { ...process.env, AWS_PAGER: '' } });
+    return typeof out === 'string' ? out.trimEnd() : out;
+  } catch (err) {
+    throw new Error(`AWS secret retrieval failed (region=${r}, secret=${s}): ${err.message}`);
+  }
 }
 
 /**
