@@ -192,11 +192,10 @@ let __secretTempCounter = 0;
  * @returns {string} Unique-ish numeric id
  */
 function nextTempId() {
-	const now = Date.now();
-	// Prevent unbounded growth in long-running processes, thus ensuring predictable length in tests
-	const upperBoundHex = 0xffff;
-	__secretTempCounter = (__secretTempCounter + 1) & upperBoundHex; // bounded
-	return `${now}${__secretTempCounter}`; // digits only for tests
+  const now = Date.now();
+  const upperBoundHex = 0xffff; // prevent unbounded growth
+  __secretTempCounter = (__secretTempCounter + 1) & upperBoundHex; // bounded
+  return `${now}${__secretTempCounter}`; // digits only for tests
 }
 
 /**
@@ -275,17 +274,17 @@ function envFiles(envSuffix, extra = []) { return [ './env/.env', `./env/.${envS
  */
 function createFoundryService(opts) {
 	const { name, dir, image, user, port, fetchStagger, secretsRef = [], envSuffix, extraEnv = [], extraEnvFiles = [], extraVolumes = [] } = opts;
-	return {
-		image,
-		container_name: name,
-		hostname: name,
-		user: `${user}`,
-		ports: [ `${port}:${BASE_PORT}` ],
-		volumes: [ ...buildBaseVolumeMounts(name, dir), ...extraVolumes ],
-		secrets: secretsRef,
-		env_file: envFiles(envSuffix, extraEnvFiles),
-		environment: [ `${FETCH_STAGGER_ENV}=${fetchStagger}`, ...extraEnv ]
-	};
+  return {
+    image,
+    container_name: name,
+    hostname: name,
+    user: `${user}`,
+    ports: [ `${port}:${BASE_PORT}` ],
+    volumes: [ ...buildBaseVolumeMounts(name, dir), ...extraVolumes ],
+    secrets: secretsRef,
+    env_file: envFiles(envSuffix, extraEnvFiles),
+    environment: [ `${FETCH_STAGGER_ENV}=${fetchStagger}`, ...extraEnv ]
+  };
 }
 /**
  * Build experimental provider warning prefix.
@@ -324,31 +323,88 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
   if (mode === 'none') return { topLevel: {}, serviceRef: [] };
   const target = opts.secretsTarget || DEFAULT_SECRET_TARGET;
 
-  if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
-    const name = opts.secretsExternalName || SECRET_BASE_NAME;
-    return { topLevel: { [name]: { external: true } }, serviceRef: [ { source: name, target } ] };
+  // Explicit file mode or auto with an existing file on disk
+  if (mode === 'file' || (mode === 'auto' && opts.secretsFile)) {
+    const filePath = opts.secretsFile || './secrets.json';
+    return {
+      topLevel: { [SECRET_BASE_NAME]: { file: filePath } },
+      serviceRef: [ { source: SECRET_BASE_NAME, target } ]
+    };
   }
 
-  const providerCandidates = [
-    { mode: 'gcp', cond: mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret), suffix: SECRET_PROVIDER_SUFFIX.gcp, getter: () => retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret) },
-    { mode: 'azure', cond: mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret), suffix: SECRET_PROVIDER_SUFFIX.azure, getter: () => retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret) },
-    { mode: 'aws', cond: mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret), suffix: SECRET_PROVIDER_SUFFIX.aws, getter: () => retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret) }
-  ];
-  for (const p of providerCandidates) {
-    if (!p.cond) continue;
-    console.warn(experimentalWarning(p.mode));
-    const secretName = `${SECRET_BASE_NAME}_${p.suffix}`;
-    const fp = tempSecretPath(p.suffix, nextTempId());
-    try {
-      fs.writeFileSync(fp, p.getter(), 'utf8');
-    } catch (error) {
-      const map = { gcp: 'GCP', azure: 'Azure', aws: 'AWS' };
-      const proper = map[p.mode.toLowerCase()] || p.mode;
-      throw new Error(`Failed to retrieve ${proper} secret: ${error.message}`);
-    }
-    return { topLevel: { [secretName]: { file: fp } }, serviceRef: [ { source: secretName, target } ] };
+	if (mode === 'external' || (mode === 'auto' && opts.secretsExternalName)) {
+		const name = opts.secretsExternalName || 'config_json';
+		return {
+			topLevel: { [name]: { external: true } },
+			serviceRef: [ { source: name, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
+	if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
+		console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
+		const secretName = 'config_json_gcp';
+		const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
+
+		// Create a temporary file with the GCP secret content
+		try {
+			const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
+			fs.writeFileSync(gcpSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: gcpSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
+	if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
+		console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
+		const secretName = 'config_json_azure';
+		const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
+
+		// Create a temporary file with the Azure secret content
+		try {
+			const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
+			fs.writeFileSync(azureSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: azureSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+
+	if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
+		console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
+		const secretName = 'config_json_aws';
+		const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
+
+		// Create a temporary file with the AWS secret content
+		try {
+			const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
+			fs.writeFileSync(awsSecretFile, secretContent, 'utf8');
+		} catch (error) {
+			throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
+		}
+
+		return {
+			topLevel: { [secretName]: { file: awsSecretFile } },
+			serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+		};
+	}
+  // fallthrough to unified secrets logic below
+  // No other modes matched; default to file mode fallback using provided secretsFile
+  if (opts.secretsFile) {
+    return {
+      topLevel: { [SECRET_BASE_NAME]: { file: opts.secretsFile } },
+      serviceRef: [ { source: SECRET_BASE_NAME, target } ]
+    };
   }
-  return { topLevel: { [SECRET_BASE_NAME]: { file: opts.secretsFile || './secrets.json' } }, serviceRef: [ { source: SECRET_BASE_NAME, target } ] };
+  return { topLevel: {}, serviceRef: [] };
 }
 
 /**
@@ -476,13 +532,17 @@ function buildComposeFromComposeConfig(config, secretsConf) {
     const name = v.name;
     const dir = v.versionDir;
     if (!name || !dir) throw new Error(`Version entries must include name and versionDir: ${JSON.stringify(v)}`);
-    // Determine image tag preference order: explicit tag > versionDir pattern > lenient strip
     let imageTag;
+    // Use explicit tag if provided and non-empty
     if (typeof v.tag === 'string' && v.tag !== '') {
       imageTag = v.tag;
-    } else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) {
+    }
+    // If versionDir matches "vNN", use NN as tag
+    else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) {
       imageTag = v.versionDir.replace(/^v/, '');
-    } else {
+    }
+    // Fallback: use dir with "v" stripped
+    else {
       imageTag = dir.replace(/^v/, '');
     }
     const repo = config.baseImage || FALLBACK_IMAGE;

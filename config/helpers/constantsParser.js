@@ -31,78 +31,71 @@ class ConstantsParser {
 	/**
 	 * Validates input arguments for parseConstants method.
 	 * Ensures constants is a string and parseContextRootMap is a boolean.
-	 *
-	 * @param {*} constants - The constants value to validate.
-	 * @param {*} parseContextRootMap - The parseContextRootMap value to validate.
-	 * @throws {TypeError} If constants is not a string or parseContextRootMap is not a boolean.
+	 * @param {*} constants Incoming constants YAML string
+	 * @param {*} parseContextRootMap Flag indicating rootMap parsing
+	 * @throws {TypeError} On invalid argument types
 	 * @private
 	 * @static
 	 */
 	static #validateParseConstantsArgs(constants, parseContextRootMap) {
-		if (typeof constants !== 'string') {
-			throw new TypeError('constants must be a string');
-		}
-		if (typeof parseContextRootMap !== 'boolean') {
-			throw new TypeError('parseContextRootMap must be a boolean');
+		if (typeof constants !== 'string') throw new TypeError('constants must be a string');
+		if (typeof parseContextRootMap !== 'boolean') throw new TypeError('parseContextRootMap must be a boolean');
+	}
+
+	/**
+	 * Internal utility: plain object guard.
+	 * @param {any} v Value to test
+	 * @returns {boolean} Is plain object
+	 * @private
+	 * @static
+	 */
+	static #isPlainObject(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+
+	/**
+	 * Parses a YAML string of constants and optionally converts context.remote.rootMap into a factory function.
+	 * Uses a minimal YAML schema to reduce attack surface.
+	 * @param {string} constants YAML string
+	 * @param {Object} [globalNamespace=globalThis] Provided for backwards compatibility (currently not pre-bound)
+	 * @param {boolean} [parseContextRootMap=true] Whether to transform remote.rootMap
+	 * @param {Object} [module=null] Module object placeholder (not bound until factory invocation)
+	 * @returns {Object} Parsed constants object (mutated with context.rootMap function if enabled)
+	 * @throws {TypeError|Error}
+	 * @static
+	 */
+	static parseConstants(constants, globalNamespace = globalThis, parseContextRootMap = true, module = null) { // eslint-disable-line no-unused-vars
+		this.#validateParseConstantsArgs(constants, parseContextRootMap);
+		try {
+			// Use CORE_SCHEMA to allow standard scalars (ints, bools, null) without custom unsafe tags
+			const parsedConstants = yaml.load(constants, { schema: yaml.CORE_SCHEMA });
+			if (parseContextRootMap && parsedConstants?.context?.remote?.rootMap && this.#isPlainObject(parsedConstants.context.remote.rootMap)) {
+				// Replace with factory (deferred resolution). We DO NOT pre-bind globalNamespace/module to preserve runtime flexibility.
+				const cfg = parsedConstants.context.remote.rootMap;
+				parsedConstants.context.rootMap = this.createRootMapFromYaml(cfg);
+			}
+			return parsedConstants;
+		} catch (error) {
+			console.error('Error parsing constants:', error);
+			throw new Error('Failed to parse constants');
 		}
 	}
 
 	/**
-	 * Parses a YAML string of constants, performs a deep copy, and processes the context configuration.
-	 *
-	 * Loads the YAML string, deeply clones the resulting object, and optionally parses the `context.rootMap`
-	 * property to create a root map function.
-	 *
-	 * @param {string} constants - The YAML string containing the constants to parse.
-	 * @param {Object} [globalNamespace=globalThis] - The global namespace to use for path resolution.
-	 * @param {boolean} [parseContextRootMap=true] - Whether to parse the `context.rootMap` property. Defaults to true.
-	 * @param {Object} [module=null] - The module object to use for root map creation.
-	 * @returns {Object} The parsed constants object.
-	 * @throws {TypeError} If constants is not a string or parseContextRootMap is not a boolean.
-	 * @throws {Error} If YAML parsing fails.
-	 * @static
-	 */
-		static parseConstants(constants, _globalNamespace = globalThis, parseContextRootMap = true, _module = null) {
-			this.#validateParseConstantsArgs(constants, parseContextRootMap);
-
-			try {
-				const parsedConstants = yaml.load(constants);
-
-				if (parseContextRootMap && parsedConstants?.context?.remote?.rootMap) {
-					parsedConstants.context.rootMap = this.createRootMapFromYaml(
-						parsedConstants.context.remote.rootMap
-					);
-				}
-
-				return parsedConstants;
-			} catch (error) {
-				console.error('Error parsing constants:', error);
-				throw new Error('Failed to parse constants');
-			}
-		}
-
-	/**
-	 * Creates a root map function from a rootMap object.
-	 * The returned function can be called with globalNamespace and module parameters
-	 * to generate a root map with resolved paths.
-	 *
-	 * @param {Object} rootMapConfig - The rootMap object definition.
-	 * @param {Object} [globalNamespace=undefined] - The global namespace for path resolution (used as default).
-	 * @param {Object} [module=undefined] - The module object for root map creation (used as default).
-	 * @returns {Function} A function that creates the root map when called with (globalNamespace, module).
+	 * Creates a root map factory from rootMap configuration.
+	 * Accepts either the direct map or an object with a rootMap property.
+	 * @param {Object} rootMapConfig Root map configuration or wrapper { rootMap: {...} }
+	 * @returns {Function} Factory (runtimeGlobalNamespace, runtimeModule) => resolved rootMap object
 	 * @static
 	 */
 	static createRootMapFromYaml(rootMapConfig) {
-		// Support being passed either:
-		// 1. The actual rootMap object, or
-		// 2. An object containing a `rootMap` property (mirrors some config/test inputs)
-		const effectiveConfig = (rootMapConfig && typeof rootMapConfig === 'object' && !Array.isArray(rootMapConfig) && rootMapConfig.rootMap && typeof rootMapConfig.rootMap === 'object')
+		const effectiveConfig = (this.#isPlainObject(rootMapConfig) && this.#isPlainObject(rootMapConfig.rootMap))
 			? rootMapConfig.rootMap
 			: rootMapConfig;
-
+		if (!this.#isPlainObject(effectiveConfig)) {
+			throw new TypeError('rootMapConfig must be a plain object or contain a plain object rootMap property');
+		}
 		return (runtimeGlobalNamespace, runtimeModule) => {
 			const rootMap = {};
-			for (const [key, value] of Object.entries(effectiveConfig || {})) {
+			for (const [key, value] of Object.entries(effectiveConfig)) {
 				if (value === null) {
 					rootMap[key] = null;
 				} else if (value === 'module') {
@@ -110,7 +103,7 @@ class ConstantsParser {
 				} else if (typeof value === 'string') {
 					rootMap[key] = PathUtils.resolvePath(runtimeGlobalNamespace, value);
 				} else {
-					// Fallback: preserve value as-is for any unexpected types
+					// Preserve unexpected types (defensive, avoids throwing in existing tests)
 					rootMap[key] = value;
 				}
 			}
@@ -120,4 +113,3 @@ class ConstantsParser {
 }
 
 export default ConstantsParser;
-
