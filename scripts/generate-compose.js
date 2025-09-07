@@ -311,7 +311,14 @@ function buildComposeFromComposeConfig(config, secretsConf) {
 
 		// Prefer an explicit tag if provided; if tag is missing or empty,
 		// fall back to the numeric version directory when available.
-		const imageTag = (typeof v.tag === 'string' && v.tag !== '') ? v.tag : v.versionDir.replace(/^v/, '');
+		let imageTag;
+		if (typeof v.tag === 'string' && v.tag !== '') {
+			imageTag = v.tag;
+		} else if (typeof v.versionDir === 'string' && /^v\d+$/.test(v.versionDir)) {
+			imageTag = v.versionDir.replace(/^v/, '');
+		} else {
+			throw new Error(`Invalid versionDir format for service "${name}": "${v.versionDir}". Expected format "vNN".`);
+		}
 		const image = `${config.baseImage || 'felddy/foundryvtt'}:${imageTag}`;
 		const user = v.user || config.user || '0:0';
 		const port = v.port || 30000;
