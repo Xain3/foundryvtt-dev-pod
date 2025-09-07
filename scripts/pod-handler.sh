@@ -89,10 +89,15 @@ if [ "${cmd:-}" != "help" ] && [ "${cmd:-}" != "-h" ] && [ "${cmd:-}" != "--help
 	CONFIG_FILE="container-config.json"
 	if [ -f "$CONFIG_FILE" ]; then
 		echo "Validating container configuration..."
-		if ! node "$SCRIPT_DIR/validate-config.js" "$CONFIG_FILE" /tmp >/dev/null 2>&1; then
+		# Use process-specific cache directory to avoid race conditions
+		CACHE_DIR="/tmp/pod-handler-$$"
+		mkdir -p "$CACHE_DIR"
+		if ! node "$SCRIPT_DIR/validate-config.js" "$CONFIG_FILE" "$CACHE_DIR" >/dev/null 2>&1; then
 			echo "ERROR: Container configuration validation failed" >&2
+			rm -rf "$CACHE_DIR"
 			exit 2
 		fi
+		rm -rf "$CACHE_DIR"
 	fi
 fi
 
