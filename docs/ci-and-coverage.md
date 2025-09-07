@@ -38,7 +38,6 @@ Override via environment variables:
 
 - `THRESHOLDS_FILE`: path to a custom thresholds JSON file.
 - `COVERAGE_SUMMARY`: path to the Jest `coverage-summary.json` file.
-- `COVERAGE_SUMMARY`: path to the Jest `coverage-summary.json` file.
 
 Notes about CI coverage generation
 
