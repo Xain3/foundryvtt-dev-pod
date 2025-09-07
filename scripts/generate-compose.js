@@ -119,7 +119,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateConfig } from './validate-config.js';
 
@@ -337,22 +337,43 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
     console.warn(experimentalWarning(p.mode));
     const secretName = `${SECRET_BASE_NAME}_${p.suffix}`;
     const fp = tempSecretPath(p.suffix, nextTempId());
-  try { fs.writeFileSync(fp, p.getter(), 'utf8'); } catch (error) { const map = { gcp: 'GCP', azure: 'Azure', aws: 'AWS' }; const proper = map[p.mode.toLowerCase()] || p.mode; throw new Error(`Failed to retrieve ${proper} secret: ${error.message}`); }
+    try {
+      fs.writeFileSync(fp, p.getter(), 'utf8');
+    } catch (error) {
+      const map = { gcp: 'GCP', azure: 'Azure', aws: 'AWS' };
+      const proper = map[p.mode.toLowerCase()] || p.mode;
+      throw new Error(`Failed to retrieve ${proper} secret: ${error.message}`);
+    }
     return { topLevel: { [secretName]: { file: fp } }, serviceRef: [ { source: secretName, target } ] };
   }
   return { topLevel: { [SECRET_BASE_NAME]: { file: opts.secretsFile || './secrets.json' } }, serviceRef: [ { source: SECRET_BASE_NAME, target } ] };
 }
 
 /**
- * Fetch secret value from GCP Secret Manager (latest version).
- * @param {string} project GCP project id
- * @param {string} secretName Secret name
- * @returns {string} Raw secret contents
+ * Retrieve a secret's latest version from GCP Secret Manager (safer variant).
+ * Backwards compatible with prior 2-arg signature (project, secretName).
+ * @param {string} project GCP project ID
+ * @param {string} secretName Secret name in Secret Manager
+ * @param {Function} [execFn=execFileSync] Injectable exec function for tests
+ * @returns {string} Secret value (utf8, trimmed)
  * @export
  */
-function retrieveGcpSecret(project, secretName) {
-	const gcpCommand = `gcloud secrets versions access latest --secret="${secretName}" --project="${project}"`;
-	return execSync(gcpCommand, { encoding: 'utf8' });
+function retrieveGcpSecret(project, secretName, execFn = execFileSync) {
+  if (typeof project !== 'string' || !project.trim()) throw new Error('GCP project must be a non-empty string');
+  if (typeof secretName !== 'string' || !secretName.trim()) throw new Error('GCP secret name must be a non-empty string');
+  const trimmedProject = project.trim();
+  const trimmedSecret = secretName.trim();
+  const args = [ 'secrets', 'versions', 'access', 'latest', `--secret=${trimmedSecret}`, `--project=${trimmedProject}` ];
+  try {
+    const out = execFn('gcloud', args, {
+      encoding: 'utf8',
+      timeout: 8000,
+      env: { ...process.env, CLOUDSDK_CORE_DISABLE_PROMPTS: '1' }
+    });
+    return typeof out === 'string' ? out.trimEnd() : out;
+  } catch (err) {
+    throw new Error(`GCP secret retrieval failed (project=${trimmedProject}, secret=${trimmedSecret}): ${err.message}`);
+  }
 }
 
 /**
