@@ -34,6 +34,28 @@ Two small CLIs plus a patch framework:
 - Descriptive names; constants UPPER_SNAKE_CASE; no `eval` / `with`.
 - Keep functions small (≈20 lines) & prefer early returns.
 - Private helpers defined above exports; exported symbols documented with JSDoc `@export` where used.
+- **Use path aliases** for imports: `#helpers/*`, `#scripts/*`, `#config/*`, etc. instead of relative paths.
+
+### Path Aliases
+Project supports clean import aliases via jsconfig.json:
+- `#/*` - Project root
+- `#scripts/*` - CLI scripts  
+- `#helpers/*` - Helper modules
+- `#config/*` - Configuration files
+- `#patches/*` - Patch system
+- `#patches/entrypoint/*` - Patch entry points
+- `#patches/common/*` - Common patch utilities
+- `#tests/unit/*` - Unit tests
+- `#tests/integration/*` - Integration tests
+- `#docs/*` - Documentation
+- `#examples/*` - Example configurations
+- `#schemas/*` - JSON schemas
+
+External packages can access modules via package exports:
+```javascript
+const validator = require('foundryvtt-dev-pod/helpers/config-validator');
+const config = require('foundryvtt-dev-pod/babel.config.cjs');
+```
 
 ## 6. Testing & Coverage
 - Jest invoked with `--experimental-vm-modules` (already scripted).

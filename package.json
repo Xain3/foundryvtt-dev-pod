@@ -13,6 +13,7 @@
     "./scripts/validate-config": "./scripts/validate-config.js",
     "./babel.config.cjs": "./babel.config.cjs",
     "./jsconfig.json": "./jsconfig.json",
+    "./*": "./*",
     "./scripts/*": "./scripts/*",
     "./helpers/*": "./helpers/*",
     "./config/*": "./config/*",
