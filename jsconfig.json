@@ -16,6 +16,7 @@
       "#patches/common/*": ["./patches/common/*"],
       "#tests/unit/*": ["./tests/unit/*"],
       "#tests/integration/*": ["./tests/integration/*"],
+      "#tests/utils/*": ["./tests/utils/*"],
       "#docs/*": ["./docs/*"],
       "#examples/*": ["./examples/*"],
       "#schemas/*": ["./schemas/*"]

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ConfigValidator, validateConfigWithCache, calculateFileHash } from '../../../helpers/config-validator.js';
+import { ConfigValidator, validateConfigWithCache, calculateFileHash } from '#helpers/config-validator.js';
 
 describe('scripts/config-validator.js', () => {
   let tempDir;

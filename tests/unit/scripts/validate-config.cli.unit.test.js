@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import childProcess from 'node:child_process';
-import { validateConfig, validateConfigWithCache, calculateFileHash } from '../../../scripts/validate-config.js';
+import { validateConfig, validateConfigWithCache, calculateFileHash } from '#scripts/validate-config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

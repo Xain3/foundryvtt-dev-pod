@@ -7,7 +7,7 @@ import {
   fetchToFileWithCache,
   readMetaForUrl,
   CacheManager
-} from '../../../../../patches/common/helpers/cache.mjs';
+} from '#patches/common/helpers/cache.mjs';
 
 describe('patches/common/helpers/cache.mjs', () => {
   const tmpRoot = path.join(process.cwd(), '.jest-tmp-cache');

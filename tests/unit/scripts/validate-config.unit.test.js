@@ -13,7 +13,7 @@ import {
   checkConfigWithCache,
   parseCommandLineArgs,
   showHelpMessage
-} from '../../../scripts/validate-config.js';
+} from '#scripts/validate-config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

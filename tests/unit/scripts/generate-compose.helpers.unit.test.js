@@ -1,4 +1,4 @@
-import { deriveVersionDefaults, buildServiceEntry } from '../../../scripts/generate-compose.js';
+import { deriveVersionDefaults, buildServiceEntry } from '#scripts/generate-compose.js';
 
 describe('deriveVersionDefaults', () => {
   test('derives sensible defaults from version params', () => {

@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect } from '@jest/globals';
-import { retrieveGcpSecret } from '../../../scripts/generate-compose.js';
+import { retrieveGcpSecret } from '#scripts/generate-compose.js';
 
 function mockExecSuccess(expectedArgs, output = 'secret-value\n') {
   return (cmd, args, opts) => {

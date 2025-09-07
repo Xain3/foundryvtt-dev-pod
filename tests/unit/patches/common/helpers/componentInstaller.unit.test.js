@@ -3,7 +3,7 @@ import path from 'node:path';
 import http from 'node:http';
 import zlib from 'node:zlib';
 import { jest } from '@jest/globals';
-import { ComponentInstaller } from '../../../../../patches/common/helpers/componentInstaller.mjs';
+import { ComponentInstaller } from '#patches/common/helpers/componentInstaller.mjs';
 
 function padToBlockSize(len, block = 512) { return (block - (len % block)) % block; }
 function buildTar(entries) {
