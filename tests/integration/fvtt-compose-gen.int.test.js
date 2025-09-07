@@ -36,7 +36,7 @@ function runComposeGenExpectFailure(args = [], opts = {}) {
   const repoRoot = path.resolve(__dirname, '../..');
   const binaryPath = path.join(repoRoot, 'scripts/generate-compose.js');
   const cmd = `node ${binaryPath} ${args.join(' ')}`;
-  
+
   try {
     childProcess.execSync(cmd, { encoding: 'utf8', stdio: 'pipe', ...opts });
     throw new Error('Expected command to fail but it succeeded');
@@ -92,15 +92,16 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
       fs.writeFileSync(testConfigPath, JSON.stringify(config, null, 2));
 
       // Generate compose file
+      // eslint-disable-next-line no-unused-vars
       const output = runComposeGen(['-c', testConfigPath, '-o', testOutputPath]);
-      
+
       // Verify output file was created
       expect(fs.existsSync(testOutputPath)).toBe(true);
-      
+
       // Parse and validate generated YAML
       const generatedYaml = fs.readFileSync(testOutputPath, 'utf8');
       const doc = yaml.load(generatedYaml);
-      
+
       expect(doc).toHaveProperty('services');
       expect(doc.services).toHaveProperty('foundry-v13');
       expect(doc.services['foundry-v13'].image).toBe('felddy/foundryvtt:release');
@@ -122,7 +123,7 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
       fs.writeFileSync(testConfigPath, JSON.stringify(config, null, 2));
 
       const output = runComposeGen(['-c', testConfigPath, '--print']);
-      
+
       // Should contain valid YAML
       const doc = yaml.load(output);
       expect(doc).toHaveProperty('services');
@@ -139,10 +140,10 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
       fs.writeFileSync(testConfigPath, JSON.stringify(config, null, 2));
 
       const output = runComposeGen(['-c', testConfigPath, '-o', testOutputPath, '--dry-run']);
-      
+
       // Should not create output file in dry-run mode
       expect(fs.existsSync(testOutputPath)).toBe(false);
-      
+
       // Should show dry-run messages
       expect(output).toContain('[dry-run]');
       expect(output).toContain('Would generate compose YAML');
@@ -179,7 +180,7 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
         modules: {},
         versions: { '13': { install: { systems: {}, modules: {} } } }
       };
-      
+
       // Only create the file if it doesn't exist (don't overwrite existing)
       const fileExists = fs.existsSync(defaultConfigPath);
       if (!fileExists) {
@@ -200,14 +201,14 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
     test('handles missing config file gracefully', () => {
       const nonExistentPath = path.join(tempDir, 'does-not-exist.json');
       const result = runComposeGenExpectFailure(['-c', nonExistentPath]);
-      
+
       expect(result.code).not.toBe(0);
       expect(result.stderr || result.stdout).toContain('not found');
     });
 
     test('handles invalid JSON gracefully', () => {
       fs.writeFileSync(testConfigPath, '{ invalid json content');
-      
+
       const result = runComposeGenExpectFailure(['-c', testConfigPath]);
       expect(result.code).not.toBe(0);
     });
@@ -273,6 +274,7 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
 
         expect(output).toContain('[dry-run]');
       } catch (error) {
+        console.warn(`Dry-run external secrets test failed (error ${error}), likely due to missing Docker support. Skipping.`);
         // If the above fails, just test that we can handle the GCP mode warning
         const result = runComposeGenExpectFailure([
           '-c', testConfigPath,
@@ -281,7 +283,7 @@ describe('fvtt-compose-gen CLI binary integration tests', () => {
           '--secrets-gcp-project', 'test-project',
           '--secrets-gcp-secret', 'test-secret'
         ]);
-        
+
         expect(result.stderr || result.stdout).toContain('[experimental]');
       }
     });
