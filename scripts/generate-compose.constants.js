@@ -26,6 +26,11 @@ const SECRET_MODES = Object.freeze(gcConst.secretModes || [ 'file', 'external', 
 const FETCH_STAGGER_DEFAULTS = Object.freeze(gcDefaults.fetchStaggerDefaults || { high: 4, mid: 2, none: 0 });
 const DEFAULT_BUILDER = Object.freeze(gcDefaults.defaultBuilder || { image: 'node:20-alpine', enabled: true });
 
+// Timeout (ms) for cloud CLI secret retrieval commands (gcloud/az/aws)
+// Environment override: COMPOSE_SECRETS_CLI_TIMEOUT_MS
+// Default fallback remains 8000ms for backwards compatibility
+const SECRET_CLI_TIMEOUT_MS = gcConst.secretCliTimeoutMs || 8000;
+
 // Common bind path targets (sources vary per version dir)
 const PATHS = Object.freeze(gcConst.paths || {
   configFileSource: './container-config.json',
@@ -55,7 +60,8 @@ const argsFallbacks = gcDefaults.argsFallbacks || {
   secretsAzureVault: '',
   secretsAzureSecret: '',
   secretsAwsRegion: '',
-  secretsAwsSecret: ''
+  secretsAwsSecret: '',
+  secretsCliTimeout: ''
 };
 
 export {
@@ -72,6 +78,7 @@ export {
   SECRET_MODES,
   FETCH_STAGGER_DEFAULTS,
   DEFAULT_BUILDER,
+  SECRET_CLI_TIMEOUT_MS,
   PATHS,
   argsFallbacks
 };

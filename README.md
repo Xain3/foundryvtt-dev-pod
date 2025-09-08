@@ -81,6 +81,7 @@ Flags:
 --secrets-azure-secret <n>   Azure secret name
 --secrets-aws-region <r>     AWS region
 --secrets-aws-secret <n>     AWS Secrets Manager name
+--secrets-cli-timeout <ms>   Timeout ms for cloud secret CLI calls (default: 8000)
 ```
 
 Environment overrides (same semantics as flags):
@@ -100,6 +101,7 @@ COMPOSE_SECRETS_AZURE_VAULT
 COMPOSE_SECRETS_AZURE_SECRET
 COMPOSE_SECRETS_AWS_REGION
 COMPOSE_SECRETS_AWS_SECRET
+COMPOSE_SECRETS_CLI_TIMEOUT_MS   # Timeout (ms) for cloud secret CLI calls (default: 8000)
 ```
 
 ### `fvtt-pod` (`scripts/pod-handler.sh`)
@@ -157,6 +159,8 @@ Configuration validation failed:
 ## Secrets Modes
 
 Modes: `file`, `external`, `gcp` (experimental), `azure` (experimental), `aws` (experimental), `none`, or `auto` (auto-detects based on provided flags/env). Experimental cloud modes write a temp file in `/tmp` containing the retrieved secret content, then mount it as a compose secret.
+
+Cloud secret retrieval commands (gcloud/az/aws) default to an 8000ms timeout; adjust via `COMPOSE_SECRETS_CLI_TIMEOUT_MS` if you experience slow network or regional latency.
 
 Example (AWS auto-detect):
 

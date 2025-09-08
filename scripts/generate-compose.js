@@ -32,6 +32,7 @@
  *  --secrets-azure-secret <secret> Azure mode: Secret name in Key Vault
  *  --secrets-aws-region <region>   AWS mode: AWS region
  *  --secrets-aws-secret <secret>   AWS mode: Secrets Manager secret name
+ *  --secrets-cli-timeout <ms>      Timeout (ms) for cloud secrets CLI calls (default: 8000)
  *
  * Environment overrides (container-config mode):
  *  - COMPOSE_BASE_IMAGE: Base image for Foundry services (default: felddy/foundryvtt)
@@ -135,11 +136,23 @@ import {
   SECRET_MODES,
   FETCH_STAGGER_DEFAULTS,
   DEFAULT_BUILDER,
+  SECRET_CLI_TIMEOUT_MS,
   PATHS,
   argsFallbacks
 } from './generate-compose.constants.js'; // Kept for backwards compatibility; prefer config/config.js overrides
 // eslint-disable-next-line no-unused-vars
 import moduleConfig from '../config/config.js'; // Preferred source for overrides and tunables
+
+// Effective timeout for cloud CLI secret retrieval (env override wins, fallback constant 8000ms)
+let _secretRetrieveTimeoutMs = (() => {
+  const raw = Number(process.env.COMPOSE_SECRETS_CLI_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : SECRET_CLI_TIMEOUT_MS;
+})();
+function getSecretsCliTimeoutMs() { return _secretRetrieveTimeoutMs; }
+function setSecretsCliTimeoutMs(v) {
+  const n = Number(v);
+  if (Number.isFinite(n) && n > 0) _secretRetrieveTimeoutMs = n;
+}
 
 
 /**
@@ -163,7 +176,8 @@ function parseArgs(argv) {
     secretsAzureVault: process.env.COMPOSE_SECRETS_AZURE_VAULT || argsFallbacks.secretsAzureVault,
     secretsAzureSecret: process.env.COMPOSE_SECRETS_AZURE_SECRET || argsFallbacks.secretsAzureSecret,
     secretsAwsRegion: process.env.COMPOSE_SECRETS_AWS_REGION || argsFallbacks.secretsAwsRegion,
-    secretsAwsSecret: process.env.COMPOSE_SECRETS_AWS_SECRET || argsFallbacks.secretsAwsSecret
+    secretsAwsSecret: process.env.COMPOSE_SECRETS_AWS_SECRET || argsFallbacks.secretsAwsSecret,
+    secretsCliTimeout: process.env.COMPOSE_SECRETS_CLI_TIMEOUT_MS || argsFallbacks.secretsCliTimeout
   };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
@@ -181,6 +195,7 @@ function parseArgs(argv) {
     else if (a === '--secrets-azure-secret' && argv[i + 1]) args.secretsAzureSecret = argv[++i];
     else if (a === '--secrets-aws-region' && argv[i + 1]) args.secretsAwsRegion = argv[++i];
     else if (a === '--secrets-aws-secret' && argv[i + 1]) args.secretsAwsSecret = argv[++i];
+    else if (a === '--secrets-cli-timeout' && argv[i + 1]) args.secretsCliTimeout = argv[++i];
   }
   return args;
 }
@@ -423,11 +438,7 @@ function retrieveGcpSecret(project, secretName, execFn = execFileSync) {
   const trimmedSecret = secretName.trim();
   const args = [ 'secrets', 'versions', 'access', 'latest', `--secret=${trimmedSecret}`, `--project=${trimmedProject}` ];
   try {
-    const out = execFn('gcloud', args, {
-      encoding: 'utf8',
-      timeout: 8000,
-      env: { ...process.env, CLOUDSDK_CORE_DISABLE_PROMPTS: '1' }
-    });
+  const out = execFn('gcloud', args, { encoding: 'utf8', timeout: getSecretsCliTimeoutMs(), env: { ...process.env, CLOUDSDK_CORE_DISABLE_PROMPTS: '1' } });
     return typeof out === 'string' ? out.trimEnd() : out;
   } catch (err) {
     throw new Error(`GCP secret retrieval failed (project=${trimmedProject}, secret=${trimmedSecret}): ${err.message}`);
@@ -448,7 +459,7 @@ function retrieveAzureSecret(vaultName, secretName, execFn = execFileSync) {
   const s = secretName.trim();
   const args = ['keyvault', 'secret', 'show', '--vault-name', v, '--name', s, '--query', 'value', '--output', 'tsv'];
   try {
-    const out = execFn('az', args, { encoding: 'utf8', timeout: 8000, env: { ...process.env, AZURE_CORE_ONLY_SHOW_ERRORS: '1' } });
+  const out = execFn('az', args, { encoding: 'utf8', timeout: getSecretsCliTimeoutMs(), env: { ...process.env, AZURE_CORE_ONLY_SHOW_ERRORS: '1' } });
     return typeof out === 'string' ? out.trimEnd() : out;
   } catch (err) {
     throw new Error(`Azure secret retrieval failed (vault=${v}, secret=${s}): ${err.message}`);
@@ -469,7 +480,7 @@ function retrieveAwsSecret(region, secretName, execFn = execFileSync) {
   const s = secretName.trim();
   const args = ['secretsmanager', 'get-secret-value', '--region', r, '--secret-id', s, '--query', 'SecretString', '--output', 'text'];
   try {
-    const out = execFn('aws', args, { encoding: 'utf8', timeout: 8000, env: { ...process.env, AWS_PAGER: '' } });
+  const out = execFn('aws', args, { encoding: 'utf8', timeout: getSecretsCliTimeoutMs(), env: { ...process.env, AWS_PAGER: '' } });
     return typeof out === 'string' ? out.trimEnd() : out;
   } catch (err) {
     throw new Error(`AWS secret retrieval failed (region=${r}, secret=${s}): ${err.message}`);
@@ -648,6 +659,7 @@ function buildComposeFromContainerConfig(containerCfg, opts = {}, secretsConf) {
  */
 function main() {
   const args = parseArgs(process.argv);
+  if (args.secretsCliTimeout) setSecretsCliTimeoutMs(args.secretsCliTimeout);
   const { config: confPath, out, dryRun } = args;
   const absConf = path.resolve(confPath);
   if (!fs.existsSync(absConf)) {
@@ -705,6 +717,9 @@ export {
 	SECRET_MODES,
 	FETCH_STAGGER_DEFAULTS,
 	DEFAULT_BUILDER,
+  SECRET_CLI_TIMEOUT_MS,
+  getSecretsCliTimeoutMs,
+  setSecretsCliTimeoutMs,
 	PATHS,
 	// Helpers
 	composeImage,
