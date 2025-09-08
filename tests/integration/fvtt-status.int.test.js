@@ -7,7 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,10 +23,10 @@ function runFvttStatus(args = [], options = {}) {
   // Get the script path relative to the project root, not the test temp dir
   const projectRoot = path.resolve(__dirname, '../..');
   const scriptPath = path.join(projectRoot, 'scripts/fvtt-status.mjs');
-  const command = `node ${scriptPath} ${args.join(' ')}`;
-  
+  const cliArgs = [scriptPath, ...args];
+
   try {
-    const stdout = execSync(command, {
+    const stdout = execFileSync('node', cliArgs, {
       cwd: options.cwd || process.cwd(),
       encoding: 'utf8',
       env: { ...process.env, ...options.env },
