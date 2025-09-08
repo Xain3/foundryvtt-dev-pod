@@ -28,11 +28,13 @@
   },
   "bin": {
     "fvtt-compose-gen": "scripts/generate-compose.js",
-    "fvtt-pod": "scripts/pod-handler.sh"
+    "fvtt-pod": "scripts/pod-handler.sh",
+    "fvtt-status": "scripts/fvtt-status.mjs"
   },
   "files": [
     "scripts/generate-compose.js",
     "scripts/pod-handler.sh",
+    "scripts/fvtt-status.mjs",
     "scripts/validate-config.js",
     "helpers/",
     "patches/",
