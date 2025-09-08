@@ -84,6 +84,7 @@
     "test:combined": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit tests/integration --coverage --maxWorkers=1",
     "test:ci": "npm run lint && npm run test:combined",
     "check-coverage": "node .github/scripts/check-coverage.cjs",
-    "validate:package": "bash ./scripts/validate-package.sh"
+    "validate:package": "bash ./scripts/validate-package.sh",
+    "check:headers": "git diff --name-only origin/main...HEAD | xargs node scripts/check-file-headers.mjs --config header-check.config.json"
   }
 }
