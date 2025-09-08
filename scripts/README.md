@@ -56,8 +56,6 @@ The scripts in this directory serve as the primary interfaces for interacting wi
   - [`generate-compose.constants.js`](#generate-composeconstantsjs)
 - [Common Modules](#common-modules)
   - [`common/validate-config.mjs`](#commonvalidate-configmjs)
-- [Common Modules](#common-modules-1)
-  - [`common/validate-config.mjs`](#commonvalidate-configmjs-1)
 - [API](#api)
   - [`fvtt-status.mjs` Options](#fvtt-statusmjs-options)
   - [`generate-compose.js` Options](#generate-composejs-options)
@@ -66,7 +64,6 @@ The scripts in this directory serve as the primary interfaces for interacting wi
   - [`validate-package-json.js` Options](#validate-package-jsonjs-options)
   - [`validate-package.sh` Options](#validate-packagesh-options)
 - [Development Notes](#development-notes)
-- [Development Notes](#development-notes-1)
   - [Creating New CLI Tools](#creating-new-cli-tools)
   - [Architecture Guidelines](#architecture-guidelines)
 - [Examples](#examples)
@@ -94,9 +91,7 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 ### `validate-config.js`
 
 - **Purpose**: Thin CLI wrapper for container configuration validation.
-- **Purpose**: Thin CLI wrapper for container configuration validation.
 - **Usage**: `npx scripts/validate-config.js <config-path> [cache-dir]` or with `--no-cache` to force fresh validation.
-- **Details**: Delegates to `common/validate-config.mjs` for orchestration logic and `helpers/config-validator.js` for core validation functionality.
 - **Details**: Delegates to `common/validate-config.mjs` for orchestration logic and `helpers/config-validator.js` for core validation functionality.
 
 ### `validate-package-json.js`
@@ -116,14 +111,6 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 - **Purpose**: Contains constants used by `generate-compose.js`.
 - **Usage**: Internal module, not directly invoked.
 - **Details**: Defines shared constants for compose generation.
-
-## Common Modules
-
-### `common/validate-config.mjs`
-
-- **Purpose**: Script-specific orchestration logic for configuration validation.
-- **Usage**: Imported by `validate-config.js` and tested independently.
-- **Details**: Contains CLI argument parsing, validation workflow orchestration, and logging functions. Wraps `helpers/config-validator.js` for actual validation logic.
 
 ## Common Modules
 
@@ -226,8 +213,6 @@ No CLI options. Validates package.json against SchemaStore schema. Uses `USE_LOC
 ### `validate-package.sh` Options
 
 No CLI options. Runs multiple validations on package.json.
-
-## Development Notes
 
 ## Development Notes
 
