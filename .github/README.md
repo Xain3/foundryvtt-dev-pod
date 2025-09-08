@@ -24,7 +24,7 @@ maintain.
 - `constants/`: Supporting JSON used by CI scripts (e.g. coverage
   thresholds).
 
-- `PULL_REQUEST_TEMPLATE.md`: PR template that appears when opening a pull
+- `pull_request_template.md`: PR template that appears when opening a pull
   request; helps contributors provide required information.
 
 - `copilot-instructions.md`: Contributor-facing instructions and guidance for
@@ -67,7 +67,7 @@ maintain.
 - To update coverage thresholds: change `.github/constants/thresholds.json`
   and adjust `check-coverage.cjs` if needed.
 
-- The `PULL_REQUEST_TEMPLATE.md` is used automatically by GitHub when opening
+- The `pull_request_template.md` is used automatically by GitHub when opening
   new PRs; update it to change the information requested from contributors.
 
 ## Contributing
