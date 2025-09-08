@@ -3,6 +3,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+const TEMP_WRAPPER = '99-test-sync-loop.sh';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // __dirname is .../tests/unit/patches; go up 3 levels to reach repo root
 const repoRoot = path.resolve(__dirname, '../../..');
@@ -105,7 +107,7 @@ describe('docker patches: wrapper-lib/bin', () => {
       'wrapper_main -n --y=2',
       ''
     ].join('\n');
-    const file = makeTempWrapper('98-test-sync-loop.sh', contents);
+    const file = makeTempWrapper(TEMP_WRAPPER, contents);
 
     const res = runBash(file, [], {});
     try {
