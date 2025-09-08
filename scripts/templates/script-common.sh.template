@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# @file XX-script-name.sh
+# @description Common module for [SCRIPT_DESCRIPTION] orchestration logic
+# @path scripts/common/XX-script-name.sh
+# -----------------------------------------------------------------------------
+
+# TODO: Source helper scripts as needed
+# Examples:
+# source "$(dirname "${BASH_SOURCE[0]}")/../helpers/some-helper.sh"
+# source "$(dirname "${BASH_SOURCE[0]}")/../helpers/path-utils.sh"
+
+# -----------------------------------------------------------------------------
+# Parse command line arguments for this script.
+# @param $@ - Command line arguments
+# @returns 0 on success, 1 on failure
+# -----------------------------------------------------------------------------
+parse_command_line_args() {
+  # TODO: Define default options
+  HELP=false
+  # Add script-specific options here
+
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -h|--help)
+        HELP=true
+        shift
+        ;;
+      # TODO: Add script-specific argument parsing
+      -*)
+        echo "Unknown flag: $1" >&2
+        return 1
+        ;;
+      *)
+        # TODO: Handle positional arguments
+        echo "Unexpected positional argument: $1" >&2
+        return 1
+        ;;
+    esac
+  done
+
+  return 0
+}
+
+# -----------------------------------------------------------------------------
+# Show help message for this script.
+# -----------------------------------------------------------------------------
+show_help_message() {
+  cat << EOF
+Usage: $0 [options]
+
+Description:
+  [DETAILED_SCRIPT_DESCRIPTION]
+
+Options:
+  -h, --help     Show this help message
+
+  TODO: Add script-specific options here
+
+Examples:
+  $0
+  TODO: Add usage examples
+EOF
+}
+
+# -----------------------------------------------------------------------------
+# Main workflow function that orchestrates the script logic.
+# @param $@ - Command line arguments
+# -----------------------------------------------------------------------------
+run_main_workflow() {
+  if ! parse_command_line_args "$@"; then
+    return 1
+  fi
+
+  if [[ "$HELP" == "true" ]]; then
+    show_help_message
+    return 0
+  fi
+
+  # TODO: Implement main workflow logic
+  # This should orchestrate calls to domain logic in helpers/
+  # and handle CLI-specific concerns like output formatting
+
+  echo "TODO: Implement main workflow"
+}
+
+# TODO: Add additional functions as needed
+# Remember: Keep orchestration logic here, domain logic in helpers/

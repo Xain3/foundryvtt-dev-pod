@@ -1,0 +1,103 @@
+# -----------------------------------------------------------------------------
+# @file XX-script-name.ps1
+# @description Common module for [SCRIPT_DESCRIPTION] orchestration logic
+# @path scripts/common/XX-script-name.ps1
+# -----------------------------------------------------------------------------
+
+# TODO: Import helper modules as needed
+# Examples:
+# . "$PSScriptRoot/../helpers/some-helper.ps1"
+# . "$PSScriptRoot/../helpers/path-utils.ps1"
+
+# -----------------------------------------------------------------------------
+# Parse command line arguments for this script.
+# @param [string[]]$Args - Command line arguments
+# @returns [hashtable] Parsed arguments
+# -----------------------------------------------------------------------------
+function Parse-CommandLineArgs {
+  param([string[]]$Args)
+
+  $options = @{
+    # TODO: Define default options
+    Help = $false
+    # Add script-specific options here
+  }
+
+  for ($i = 0; $i -lt $Args.Length; $i++) {
+    $arg = $Args[$i]
+
+    switch ($arg) {
+      '-h' {
+        $options.Help = $true
+      }
+      '--help' {
+        $options.Help = $true
+      }
+      # TODO: Add script-specific argument parsing
+      default {
+        if ($arg.StartsWith('-')) {
+          Write-Error "Unknown flag: $arg"
+          return $null
+        }
+        # TODO: Handle positional arguments
+        Write-Error "Unexpected positional argument: $arg"
+        return $null
+      }
+    }
+  }
+
+  return $options
+}
+
+# -----------------------------------------------------------------------------
+# Show help message for this script.
+# -----------------------------------------------------------------------------
+function Show-HelpMessage {
+  $help = @"
+Usage: .\XX-script-name.ps1 [options]
+
+Description:
+  [DETAILED_SCRIPT_DESCRIPTION]
+
+Options:
+  -h, --help     Show this help message
+
+  TODO: Add script-specific options here
+
+Examples:
+  .\XX-script-name.ps1
+  TODO: Add usage examples
+"@
+
+  Write-Host $help
+}
+
+# -----------------------------------------------------------------------------
+# Main workflow function that orchestrates the script logic.
+# @param [string[]]$Args - Command line arguments
+# -----------------------------------------------------------------------------
+function Invoke-MainWorkflow {
+  param([string[]]$Args)
+
+  $options = Parse-CommandLineArgs -Args $Args
+  if ($null -eq $options) {
+    exit 1
+  }
+
+  if ($options.Help) {
+    Show-HelpMessage
+    return
+  }
+
+  # TODO: Implement main workflow logic
+  # This should orchestrate calls to domain logic in helpers/
+  # and handle CLI-specific concerns like output formatting
+
+  Write-Host "TODO: Implement main workflow"
+}
+
+# TODO: Add additional functions as needed
+# Remember: Keep orchestration logic here, domain logic in helpers/
+
+# Export functions for use as module
+Export-ModuleMember -Function Parse-CommandLineArgs, Show-HelpMessage, Invoke-MainWorkflow

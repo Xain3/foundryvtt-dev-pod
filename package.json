@@ -4,6 +4,21 @@
   "description": "CLI tools to generate Docker Compose and manage dev pods for Foundry VTT (multi-version dev)",
   "license": "MIT",
   "type": "module",
+  "imports": {
+    "#/*": "./*",
+    "#scripts/*": "./scripts/*",
+    "#helpers/*": "./helpers/*",
+    "#config/*": "./config/*",
+    "#patches/*": "./patches/*",
+    "#patches/entrypoint/*": "./patches/entrypoint/*",
+    "#patches/common/*": "./patches/common/*",
+    "#tests/unit/*": "./tests/unit/*",
+    "#tests/integration/*": "./tests/integration/*",
+    "#tests/utils/*": "./tests/utils/*",
+    "#docs/*": "./docs/*",
+    "#examples/*": "./examples/*",
+    "#schemas/*": "./schemas/*"
+  },
   "exports": {
     ".": {
       "import": "./helpers/config-validator.js"
@@ -31,9 +46,7 @@
     "fvtt-pod": "scripts/pod-handler.sh"
   },
   "files": [
-    "scripts/generate-compose.js",
-    "scripts/pod-handler.sh",
-    "scripts/validate-config.js",
+    "scripts/",
     "helpers/",
     "patches/",
     "babel.config.cjs",
