@@ -38,7 +38,6 @@ The scripts directory follows a modular pattern inspired by the `patches/` syste
 ## Overview <!-- omit in toc -->
 
 The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules (for domain logic) or `common/` modules (for script orchestration), ensuring maintainability and testability.
-The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules (for domain logic) or `common/` modules (for script orchestration), ensuring maintainability and testability.
 
 **Contents:**
 
