@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# fvtt-status entrypoint wrapper
+#
+# Purpose
+#   Thin shell wrapper for the fvtt-status CLI that delegates to the Node.js
+#   implementation. This provides a consistent entrypoint pattern and could
+#   be extended with shell-level features like environment setup if needed.
+#
+# Usage
+#   This wrapper passes all arguments directly to the Node.js script and
+#   preserves the exit code.
+# -----------------------------------------------------------------------------
+
+# Resolve the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Path to the Node.js CLI script
+CLI_SCRIPT="${SCRIPT_DIR}/../fvtt-status.mjs"
+
+# Delegate to Node.js script with all arguments and preserve exit code
+exec node "${CLI_SCRIPT}" "$@"

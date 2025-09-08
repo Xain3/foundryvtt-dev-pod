@@ -24,7 +24,7 @@ This folder contains the patching system used by container entrypoints and devel
 
 - `entrypoint/`: very thin shims invoked by the entrypoint. Keep this folder tidy.
 - `common/`: shared shell helpers and Node patch scripts.
-  - Core scripts: `wrapper-bin.sh`, `wrapper-lib.sh`, `install-components.mjs`, `sync-host-content.mjs`, `use-cache-or-stagger.mjs`, `XX-patch-entrypoint.sh.template`
+  - Core scripts: `wrapper-bin.sh`, `wrapper-lib.sh`, `install-components.mjs`, `sync-host-content.mjs`, `use-cache-or-stagger.mjs`, `templates/XX-patch-entrypoint.sh.template`
   - `helpers/`: additional helper modules (`argvParser.mjs`, `cache.mjs`, `common.mjs`, `componentInstaller.mjs`, `extractors.mjs`, `syncTaskBuilder.mjs`)
 
 ## Wrapper design
@@ -91,18 +91,18 @@ Examples:
 
 ### Adding a new wrapper
 
-1. **Start with the template**: Copy `common/XX-patch-entrypoint.sh.template` to `entrypoint/[NN-]my-patch.sh`:
+1. **Start with the template**: Copy `templates/XX-patch-entrypoint.sh.template` to `entrypoint/[NN-]my-patch.sh`:
 
-   ```bash
-   cp patches/common/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
-   ```
+```bash
+cp patches/templates/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
+```
 
-2. **Customize the wrapper**: Edit the copied file to set appropriate defaults:
+1. **Customize the wrapper**: Edit the copied file to set appropriate defaults:
    - Set `WRAPPER_RUN_MODE` ("default" for one-shot, "sync-loop" for background)
    - Optionally override `WRAPPER_NODE_BIN` if needed
    - Review the extensive template documentation for advanced options
 
-3. **Implement the Node.js script**: Create `common/my-patch.mjs` to receive:
+1. **Implement the Node.js script**: Create `common/my-patch.mjs` to receive:
    - `--procedural-number` and `--patch-name` (automatically injected)
    - Any additional arguments passed through the wrapper
 
@@ -128,7 +128,7 @@ wrapper_main "$@"
 
 - `common/helpers/*.mjs`: additional helper modules (e.g., `argvParser.mjs`, `cache.mjs`, `common.mjs`, `componentInstaller.mjs`, `extractors.mjs`, `syncTaskBuilder.mjs`).
 
-- `common/XX-patch-entrypoint.sh.template`: template for creating new wrappers.
+- `templates/XX-patch-entrypoint.sh.template`: template for creating new wrappers.
 
 ## Testing Infrastructure
 
@@ -149,7 +149,7 @@ npm run test:unit -- tests/unit/patches/  # Patch tests only
 
 ## Template Usage
 
-For consistent wrapper creation, use the comprehensive template at `common/XX-patch-entrypoint.sh.template`. This template includes:
+For consistent wrapper creation, use the comprehensive template at `templates/XX-patch-entrypoint.sh.template`. This template includes:
 
 - **Extensive inline documentation** covering the wrapper architecture and contracts
 - **Complete API reference** for wrapper-lib.sh and wrapper-bin.sh functions
@@ -159,7 +159,7 @@ For consistent wrapper creation, use the comprehensive template at `common/XX-pa
 Copy and customize the template for new wrappers:
 
 ```bash
-cp patches/common/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
+cp patches/templates/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
 # Edit the copied file to set WRAPPER_RUN_MODE and other specifics
 ```
 
@@ -195,6 +195,51 @@ Examples:
 [patch][dry-run] Would run: node sync-host-content.mjs --procedural-number 10
 [patch][error] Node executable '/nonexistent/node' not found
 ```
+
+## Windows Support
+
+For Windows developers, PowerShell wrapper scripts (`.ps1`) are provided that mirror the functionality of the shell wrappers but use PowerShell syntax. These provide failsafe logic for Windows environments.
+
+### PowerShell Wrappers
+
+The PowerShell wrappers are located in `entrypoint/` with the same naming pattern as the shell wrappers:
+
+- `00-use-cache-or-stagger.ps1`: Windows wrapper for cache and stagger logic
+- `10-sync-host-content.ps1`: Windows wrapper for syncing host content  
+- `20-install-components.ps1`: Windows wrapper for installing components
+
+### Windows Usage
+
+**PowerShell (recommended for Windows):**
+```powershell
+# Run a patch directly with PowerShell
+.\patches\entrypoint\10-sync-host-content.ps1 --some-flag
+
+# Or using pwsh if PowerShell Core is installed
+pwsh .\patches\entrypoint\10-sync-host-content.ps1 --some-flag
+```
+
+**Direct Node execution (cross-platform alternative):**
+```powershell
+# Run the Node script directly (bypasses wrapper logic)
+node patches\common\sync-host-content.mjs --some-flag
+```
+
+### Failsafe Logic
+
+Each PowerShell wrapper includes:
+
+- **Node.js detection**: Checks if `node` is available in PATH
+- **Path resolution**: Safely resolves the path to the corresponding `.mjs` script
+- **Error handling**: Provides clear error messages if Node.js is missing or script not found
+- **Argument forwarding**: Passes all arguments through to the Node.js script
+- **Exit code preservation**: Returns the same exit code as the Node.js script
+
+### Requirements
+
+- **Node.js**: Must be installed and available in PATH
+- **PowerShell**: Windows PowerShell 5.1+ or PowerShell Core 6.0+
+- **Execution Policy**: May need to set execution policy: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 ## Dry-run examples
 

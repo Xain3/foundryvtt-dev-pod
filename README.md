@@ -23,6 +23,11 @@ It leverages Docker for containerization and supports multiple Foundry versions 
 - [Builder Service](#builder-service)
 - [Development Workflow](#development-workflow)
   - [Using Path Aliases](#using-path-aliases)
+- [Documentation Structure](#documentation-structure)
+  - [`docs/` - Reference Documentation](#docs---reference-documentation)
+  - [`.dev-docs/` - Active Development Documentation](#dev-docs---active-development-documentation)
+  - [Key Differences](#key-differences)
+  - [README.md Files Throughout the Project](#readmemd-files-throughout-the-project)
 - [Testing \& Coverage](#testing--coverage)
   - [Editor (VSCode) Jest Setup](#editor-vscode-jest-setup)
 - [Publishing Note](#publishing-note)
@@ -216,6 +221,90 @@ const jsConfig = require('foundryvtt-dev-pod/jsconfig.json');
 const validator = require('foundryvtt-dev-pod/helpers/config-validator');
 const example = require('foundryvtt-dev-pod/examples/container-config.json');
 ```
+
+## Documentation Structure
+
+This project maintains a structured approach to documentation with two distinct directories:
+
+### `docs/` - Reference Documentation
+
+Contains high-level guidelines, process documentation, and standards that serve as authoritative references:
+
+- **Guidelines**: Coding standards, style guides, and best practices (`code-style.md`)
+- **Process Documentation**: CI/CD workflows and development procedures (`ci-and-coverage.md`)
+- **Reference Materials**: Technical specifications and architectural documentation
+- **Standards**: Code style, coverage requirements, and quality gates
+
+These documents are primarily used as **references** during code reviews, environment setup, and periodic reviews rather than being actively edited during development.
+
+### `.dev-docs/` - Active Development Documentation
+
+Contains working documents that are actively consumed **for** and **while** creating code:
+
+- **Specs**: Detailed specifications for features, components, or systems being developed
+- **Requirements**: Functional and non-functional requirements documents
+- **Tasks**: Task lists, TODOs, and development checklists
+- **PR Messages**: Drafts and templates for pull request descriptions and commit messages
+
+These documents are meant to be:
+
+- **Active**: Updated as code evolves
+- **Contextual**: Directly related to current development work
+- **Temporary**: May be moved, archived, or cleaned up after completion
+
+### Key Differences
+
+| Aspect | `docs/` | `.dev-docs/` |
+|--------|---------|--------------|
+| **Usage** | Reference during reviews/setup | Active during coding |
+| **Content** | Standards, processes, guidelines | Specs, requirements, tasks |
+| **Lifecycle** | Stable, long-term reference | Dynamic, project-specific |
+| **Audience** | All contributors, reviewers | Active developers on current work |
+
+This structure ensures that reference documentation remains stable and authoritative while providing a dedicated space for the dynamic documents used in active development.
+
+### README.md Files Throughout the Project
+
+The project maintains comprehensive README.md documentation at multiple levels to provide context and guidance:
+
+#### Root Level (`README.md`) <!-- omit in toc -->
+
+The main project README providing overview, quickstart, CLI reference, and comprehensive usage documentation.
+
+#### Directory-Specific READMEs <!-- omit in toc -->
+
+- **`config/README.md`**: Configuration file structure, validation rules, and usage patterns
+- **`docs/README.md`**: Reference documentation organization and usage guidelines
+- **`examples/README.md`**: Example configurations, use cases, and implementation patterns
+- **`helpers/README.md`**: Utility modules, helper functions, and shared logic documentation
+- **`patches/README.md`**: Patch system architecture, entrypoint patterns, and maintenance procedures
+- **`patches/entrypoint/README.md`**: Patch entrypoint scripts and execution order
+- **`patches/templates/README.md`**: Template files for creating new patches
+- **`schemas/README.md`**: JSON schema definitions and validation rules
+- **`scripts/README.md`**: CLI scripts, their purposes, and command-line usage
+
+#### Development Documentation READMEs <!-- omit in toc -->
+
+- **`.dev-docs/README.md`**: Active development documentation structure and workflow
+- **`.dev-docs/.tmp/README.md`**: Temporary file guidelines and cleanup procedures
+- **`.dev-docs/.specs/README.md`**: Specification document organization
+- **`.dev-docs/local/README.md`**: Local development environment documentation
+
+#### Purpose and Maintenance <!-- omit in toc -->
+
+Each README.md serves specific purposes:
+
+- **Navigation**: Help developers understand directory contents and file organization
+- **Documentation**: Provide usage instructions, examples, and best practices
+- **Onboarding**: Assist new contributors in understanding project structure
+- **Maintenance**: Guide proper usage and contribution patterns
+
+README files are maintained as living documentation and should be updated when:
+
+- Directory structure changes
+- New files or patterns are added
+- Usage instructions need clarification
+- Best practices evolve
 
 ## Testing & Coverage
 

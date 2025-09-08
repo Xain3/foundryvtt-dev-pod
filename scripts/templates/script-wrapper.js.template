@@ -1,0 +1,34 @@
+#!/usr/bin/env node
+/**
+ * @file XX-script-name.js
+ * @description Thin CLI wrapper for [SCRIPT_DESCRIPTION]
+ * @path scripts/XX-script-name.js
+ */
+
+// Import all functionality from the common module
+import {
+  // TODO: Import specific functions from the common module
+  // Example:
+  // processFunction,
+  // validateFunction,
+  // parseCommandLineArgs,
+  // showHelpMessage,
+  runMainWorkflow
+} from './common/XX-script-name.mjs';
+
+// Re-export all functions for backwards compatibility
+export {
+  // TODO: Re-export all functions that should be available to external consumers
+  // Example:
+  // processFunction,
+  // validateFunction,
+  // parseCommandLineArgs,
+  // showHelpMessage,
+  runMainWorkflow
+};
+
+// CLI interface - delegate to common module
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  runMainWorkflow(args);
+}

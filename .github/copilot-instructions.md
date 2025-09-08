@@ -25,7 +25,7 @@ Two small CLIs plus a patch framework:
 ## 4. Adding / Modifying Logic
 - Extend validation: modify `helpers/config-validator.js`; update or add focused unit tests under `tests/unit/` mirroring file path.
 - New compose feature: implement helper module, call from `scripts/generate-compose.js`; ensure tests (unit) plus at least one integration in `tests/integration/` if it affects CLI surface.
-- New patch: copy `patches/common/XX-patch-entrypoint.sh.template` -> `patches/entrypoint/NN-new-thing.sh`, add Node implementation `patches/common/new-thing.mjs`; keep executable bit.
+- New patch: copy `patches/templates/XX-patch-entrypoint.sh.template` -> `patches/entrypoint/NN-new-thing.sh`, add Node implementation `patches/common/new-thing.mjs`; keep executable bit.
 
 ## 5. Conventions & Style (enforced)
 - Style: see `docs/code-style.md` (ESLint + JSDoc).
