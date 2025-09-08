@@ -15,6 +15,15 @@ import {
   showHelpMessage
 } from '#scripts/validate-config.js';
 
+// Helper for asserting validation error messages
+function expectValidationError(result, expected) {
+  // `expected` can be a string or an array of substrings to look for in any error
+  const expectedArr = Array.isArray(expected) ? expected : [expected];
+  expect(result.errors).toBeDefined();
+  const found = expectedArr.some(sub => result.errors.some(e => e.includes(sub)));
+  expect(found).toBe(true);
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function runNode(args, opts = {}) {
@@ -203,7 +212,7 @@ describe('scripts/validate-config.js', () => {
       const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
       const result = validateConfig(configPath, schemaPath);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('additional property') || e.includes('pattern'))).toBe(true);
+      expectValidationError(result, ['additional property', 'pattern']);
     });
 
     test('validates item requires either manifest or path', () => {
@@ -235,7 +244,7 @@ describe('scripts/validate-config.js', () => {
       const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
       const result = validateConfig(configPath, schemaPath);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('format') || e.includes('uri'))).toBe(true);
+    expectValidationError(result, ['format', 'uri']);
     });
 
     test('validates worlds configuration', () => {
@@ -265,8 +274,8 @@ describe('scripts/validate-config.js', () => {
 
       const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
       const result = validateConfig(configPath, schemaPath);
-  expect(result.valid).toBe(false);
-  expect(result.errors.some(e => e.includes('additional property') || e.includes('extraProperty'))).toBe(true);
+    expect(result.valid).toBe(false);
+    expectValidationError(result, ['additional property', 'extraProperty']);
     });
 
     test('validates composition configuration', () => {
@@ -335,7 +344,7 @@ describe('scripts/validate-config.js', () => {
       const schemaPath = path.join(repoRoot, 'schemas/container-config.schema.json');
       const result = validateConfig(configPath, schemaPath);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('enum') || e.includes('direction'))).toBe(true);
+    expectValidationError(result, ['enum', 'direction']);
     });
   });
 
