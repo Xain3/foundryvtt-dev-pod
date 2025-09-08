@@ -2,21 +2,30 @@
 
 This directory contains the CLI entrypoints and thin wrappers for the FoundryVTT Dev Pod project. These scripts are designed to be user-facing tools for generating Docker Compose configurations, managing pods, and validating configurations.
 
-The directory follows an entrypoint + common pattern to improve testability, reusability, and consistency across CLI scripts.
+## Directory Structure
 
-## Directory Structure <!-- omit in toc -->
+The scripts directory follows a modular pattern inspired by the `patches/` system:
 
-``` md
-scripts/
-├── entrypoint/          # Thin shell wrappers (optional)
-│   ├── XX-script-entrypoint.template  # Template for new script entrypoints
-│   └── fvtt-status      # Example entrypoint
-├── common/              # Script-specific orchestration logic (Node .mjs modules)
-├── *.mjs                # Main CLI entry points (Node scripts)
-└── README.md           # This file
-```
+### `scripts/` (CLI entrypoints)
 
-## Design Principles <!-- omit in toc -->
+- **Purpose**: User-facing CLI scripts with minimal logic
+- **Pattern**: Thin wrappers that delegate to `common/` modules or `helpers/`
+- **Example**: `validate-config.js` - thin CLI wrapper
+
+### `scripts/common/` (Script orchestration modules)
+
+- **Purpose**: Script-specific orchestration logic and CLI utilities
+- **Pattern**: Pure functions that can be easily tested, combining `helpers/` logic
+- **Example**: `validate-config.mjs` - contains validation workflow orchestration
+- **Rule**: Do NOT duplicate `helpers/` - only script-specific glue code and CLI utilities
+
+### `scripts/entrypoint/` (Optional shell wrappers)
+
+- **Purpose**: POSIX shell wrappers for scripts (when needed)
+- **Pattern**: Similar to `patches/entrypoint/` - thin shell scripts that delegate to common modules
+- **Usage**: Currently unused, reserved for future shell wrapper needs
+
+## Design Principles
 
 1. **No duplication of `helpers/`**: The `helpers/` directory remains the single source of project-level domain logic (validation, path utils, etc.).
 
@@ -28,10 +37,15 @@ scripts/
 
 ## Overview <!-- omit in toc -->
 
-The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules, ensuring maintainability and testability.
+The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules (for domain logic) or `common/` modules (for script orchestration), ensuring maintainability and testability.
 
 **Contents:**
 
+- [Directory Structure](#directory-structure)
+  - [`scripts/` (CLI entrypoints)](#scripts-cli-entrypoints)
+  - [`scripts/common/` (Script orchestration modules)](#scriptscommon-script-orchestration-modules)
+  - [`scripts/entrypoint/` (Optional shell wrappers)](#scriptsentrypoint-optional-shell-wrappers)
+- [Design Principles](#design-principles)
 - [Scripts](#scripts)
   - [`fvtt-status.mjs`](#fvtt-statusmjs)
   - [`generate-compose.js`](#generate-composejs)
@@ -40,6 +54,8 @@ The scripts in this directory serve as the primary interfaces for interacting wi
   - [`validate-package-json.js`](#validate-package-jsonjs)
   - [`validate-package.sh`](#validate-packagesh)
   - [`generate-compose.constants.js`](#generate-composeconstantsjs)
+- [Common Modules](#common-modules)
+  - [`common/validate-config.mjs`](#commonvalidate-configmjs)
 - [API](#api)
   - [`fvtt-status.mjs` Options](#fvtt-statusmjs-options)
   - [`generate-compose.js` Options](#generate-composejs-options)
@@ -74,9 +90,9 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 
 ### `validate-config.js`
 
-- **Purpose**: Validates `container-config.json` files against schemas and caches results for performance.
+- **Purpose**: Thin CLI wrapper for container configuration validation.
 - **Usage**: `npx scripts/validate-config.js <config-path> [cache-dir]` or with `--no-cache` to force fresh validation.
-- **Details**: Wraps the validation logic from `helpers/config-validator.js`, supporting caching and file hashing.
+- **Details**: Delegates to `common/validate-config.mjs` for orchestration logic and `helpers/config-validator.js` for core validation functionality.
 
 ### `validate-package-json.js`
 
@@ -95,6 +111,14 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 - **Purpose**: Contains constants used by `generate-compose.js`.
 - **Usage**: Internal module, not directly invoked.
 - **Details**: Defines shared constants for compose generation.
+
+## Common Modules
+
+### `common/validate-config.mjs`
+
+- **Purpose**: Script-specific orchestration logic for configuration validation.
+- **Usage**: Imported by `validate-config.js` and tested independently.
+- **Details**: Contains CLI argument parsing, validation workflow orchestration, and logging functions. Wraps `helpers/config-validator.js` for actual validation logic.
 
 ## API
 
@@ -217,12 +241,11 @@ To create a new CLI tool following the entrypoint+common pattern:
 
 ### Architecture Guidelines
 
-- These scripts follow the entrypoint + common pattern for improved testability and consistency.
-- Script-specific orchestration logic is placed in `scripts/common/` modules.
-- Domain logic (validation, path utils) remains in `helpers/` to avoid duplication.
-- Main CLI scripts in the root are thin wrappers that parse arguments and delegate to common modules.
-- Optional shell entrypoints in `scripts/entrypoint/` provide consistent interfaces.
-- All scripts follow the project's ESM module conventions.
+- These scripts follow a modular pattern: CLI scripts (thin wrappers) delegate to `common/` modules (script orchestration) or `helpers/` (domain logic).
+- **Domain logic belongs in `helpers/`** - use for config validation, path resolution, and other reusable functionality.
+- **Script orchestration belongs in `common/`** - use for CLI parsing, workflow coordination, and script-specific utilities.
+- All scripts follow the project's ESM module conventions (`type: module`).
+- When adding new scripts, consider extracting logic to `common/` modules for better testability.
 - For more details on usage, refer to the main `README.md` in the project root.
 - When modifying scripts, ensure they remain executable and preserve shebang lines if applicable.
 
