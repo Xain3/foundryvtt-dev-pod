@@ -1,14 +1,14 @@
 /**
  * @file fvtt-status.unit.test.js
- * @description Unit tests for fvtt-status helper module
- * @path tests/unit/helpers/fvtt-status.unit.test.js
+ * @description Unit tests for fvtt-status common module
+ * @path tests/unit/scripts/common/fvtt-status.unit.test.js
  */
 
 import { jest } from '@jest/globals';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { checkStatus } from '../../../helpers/fvtt-status.mjs';
+import { checkStatus } from '../../../../scripts/common/fvtt-status.mjs';
 
 // Mock child_process at module level
 const mockExecSync = jest.fn();
@@ -16,7 +16,7 @@ jest.mock('child_process', () => ({
   execSync: mockExecSync
 }));
 
-describe('fvtt-status helper', () => {
+describe('fvtt-status common module', () => {
   let tempDir;
   let originalCwd;
   let composeFile;

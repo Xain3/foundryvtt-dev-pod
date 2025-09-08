@@ -33,7 +33,7 @@
  *  4: Services unhealthy or not accessible
  */
 
-import { checkStatus } from '../helpers/fvtt-status.mjs';
+import { checkStatus } from './common/fvtt-status.mjs';
 
 /**
  * Print usage information

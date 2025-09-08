@@ -1,19 +1,13 @@
 /**
  * @file fvtt-status.mjs
- * @description FoundryVTT development pod status checker helper functions
- * @path helpers/fvtt-status.mjs
+ * @description FoundryVTT development pod status checker common functions
+ * @path scripts/common/fvtt-status.mjs
  */
 
 import fs from 'fs';
-import path from 'path';
 import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-import yaml from 'js-yaml';
 
-import { ConfigValidator } from '../helpers/config-validator.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { ConfigValidator } from '../../helpers/config-validator.js';
 
 /**
  * Default compose file names to check (in order of preference)
@@ -99,7 +93,7 @@ function checkDockerAvailability() {
     // Check if docker is available
     execSync('docker --version', { stdio: 'ignore' });
     result.docker = true;
-  } catch (error) {
+  } catch {
     result.error = 'Docker not available';
     return result;
   }
@@ -110,14 +104,14 @@ function checkDockerAvailability() {
     result.compose = true;
     result.composeCommand = 'docker compose';
     result.available = true;
-  } catch (error) {
+  } catch {
     try {
       // Check for docker-compose (legacy format)
       execSync('docker-compose --version', { stdio: 'ignore' });
       result.compose = true;
       result.composeCommand = 'docker-compose';
       result.available = true;
-    } catch (legacyError) {
+    } catch {
       result.error = 'Neither "docker compose" nor "docker-compose" available';
     }
   }
@@ -158,7 +152,7 @@ function getServiceStatus(composeFile, composeCommand, dryRun = false) {
           ports: service.Publishers || [],
           health: service.Health || 'unknown'
         };
-      } catch (parseError) {
+      } catch {
         console.warn(`Warning: Failed to parse service info: ${line}`);
         return null;
       }
@@ -264,7 +258,17 @@ function printDefaultStatus(statusResult) {
  * @param {object} options - Options from CLI
  * @returns {object} Complete status result
  */
-export async function checkStatus(options) {
+export async function checkStatus(options = {}) {
+  // Set defaults if not provided  
+  const opts = {
+    composeFile: null,
+    configFile: 'container-config.json',
+    json: false,
+    verbose: false,
+    dryRun: false,
+    ...options
+  };
+
   const result = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -285,17 +289,17 @@ export async function checkStatus(options) {
     }
   };
 
-  if (options.dryRun) {
+  if (opts.dryRun) {
     console.log('[dry-run] fvtt-status: Performing status check dry-run');
-    console.log(`[dry-run] Would check compose file: ${options.composeFile || 'auto-detect'}`);
-    console.log(`[dry-run] Would check config file: ${options.configFile}`);
+    console.log(`[dry-run] Would check compose file: ${opts.composeFile || 'auto-detect'}`);
+    console.log(`[dry-run] Would check config file: ${opts.configFile}`);
     console.log('[dry-run] Would check docker availability');
     console.log('[dry-run] Would check service status');
   }
 
   // Pod Detection
-  result.pod.composeFile = detectComposeFile(options.composeFile);
-  result.pod.config = await detectAndValidateConfig(options.configFile);
+  result.pod.composeFile = detectComposeFile(opts.composeFile);
+  result.pod.config = await detectAndValidateConfig(opts.configFile);
   
   result.pod.detected = result.pod.composeFile.found || result.pod.config.found;
   result.pod.valid = result.pod.composeFile.found && result.pod.config.valid;
@@ -317,12 +321,12 @@ export async function checkStatus(options) {
   }
 
   // Service status (only if docker is available and compose file exists)
-  if (dockerCheck.available && result.pod.composeFile.found && !options.dryRun) {
+  if (dockerCheck.available && result.pod.composeFile.found && !opts.dryRun) {
     try {
       const services = getServiceStatus(
         result.pod.composeFile.file, 
         dockerCheck.composeCommand,
-        options.dryRun
+        opts.dryRun
       );
       result.services = formatServicesWithUrls(services);
 
@@ -353,7 +357,7 @@ export async function checkStatus(options) {
   result.status = result.healthy ? 'healthy' : 'unhealthy';
 
   // Print default output (unless JSON mode)
-  if (!options.json) {
+  if (!opts.json) {
     printDefaultStatus(result);
   }
 

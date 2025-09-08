@@ -2,6 +2,28 @@
 
 This directory contains the CLI entrypoints and thin wrappers for the FoundryVTT Dev Pod project. These scripts are designed to be user-facing tools for generating Docker Compose configurations, managing pods, and validating configurations.
 
+The directory follows an entrypoint + common pattern to improve testability, reusability, and consistency across CLI scripts.
+
+## Directory Structure <!-- omit in toc -->
+
+```
+scripts/
+├── entrypoint/          # Thin shell wrappers (optional)
+├── common/              # Script-specific orchestration logic (Node .mjs modules)
+├── *.mjs                # Main CLI entry points (Node scripts)
+└── README.md           # This file
+```
+
+## Design Principles <!-- omit in toc -->
+
+1. **No duplication of `helpers/`**: The `helpers/` directory remains the single source of project-level domain logic (validation, path utils, etc.).
+
+2. **`scripts/common/`**: Contains script-specific orchestration helpers that are not suitable for `helpers/` (CLI option normalization, orchestration logic, script-specific utilities that wrap `helpers/` functions).
+
+3. **`scripts/entrypoint/`**: Optional thin shell wrappers that provide a consistent interface and could be extended with shell-level features.
+
+4. **Main CLI scripts**: The `*.mjs` files in the scripts root are the primary CLI entry points that parse arguments and call into `scripts/common/` modules.
+
 ## Overview <!-- omit in toc -->
 
 The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules, ensuring maintainability and testability.
@@ -9,6 +31,7 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 **Contents:**
 
 - [Scripts](#scripts)
+  - [`fvtt-status.mjs`](#fvtt-statusmjs)
   - [`generate-compose.js`](#generate-composejs)
   - [`pod-handler.sh`](#pod-handlersh)
   - [`validate-config.js`](#validate-configjs)
@@ -16,6 +39,7 @@ The scripts in this directory serve as the primary interfaces for interacting wi
   - [`validate-package.sh`](#validate-packagesh)
   - [`generate-compose.constants.js`](#generate-composeconstantsjs)
 - [API](#api)
+  - [`fvtt-status.mjs` Options](#fvtt-statusmjs-options)
   - [`generate-compose.js` Options](#generate-composejs-options)
   - [`pod-handler.sh` Options](#pod-handlersh-options)
   - [`validate-config.js` Options](#validate-configjs-options)
@@ -25,6 +49,12 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 - [Examples](#examples)
 
 ## Scripts
+
+### `fvtt-status.mjs`
+
+- **Purpose**: FoundryVTT development pod status checker.
+- **Usage**: `npx fvtt-status --json` or `fvtt-status --dry-run`
+- **Details**: Provides comprehensive status overview including pod detection, compose validation, service status, and health checks. Uses orchestration logic from `scripts/common/fvtt-status.mjs` and domain logic from `helpers/config-validator.js`.
 
 ### `generate-compose.js`
 
@@ -65,6 +95,22 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 ## API
 
 This section details the command-line interfaces for the executable scripts in this directory.
+
+### `fvtt-status.mjs` Options
+
+- `-f, --file <compose.yml>`: Path to docker compose file (auto-detected if not specified)
+- `-c, --config <config.json>`: Path to container config file (default: container-config.json)
+- `--json`: Output status in JSON format
+- `--verbose, -v`: Show detailed information
+- `--dry-run, -n`: Show what checks would be performed without executing them
+- `-h, --help`: Show help information
+
+Exit codes:
+- `0`: Status check successful
+- `1`: General error (invalid arguments, etc.)
+- `2`: Pod not detected or configuration invalid
+- `3`: Docker/compose not available
+- `4`: Services unhealthy or not accessible
 
 ### `generate-compose.js` Options
 
@@ -141,13 +187,22 @@ No CLI options. Runs multiple validations on package.json.
 
 ## Development Notes
 
-- These scripts are thin wrappers; complex logic resides in `helpers/` for easier unit testing.
-- All scripts follow the project's CommonJS module conventions.
+- These scripts follow the entrypoint + common pattern for improved testability and consistency.
+- Script-specific orchestration logic is placed in `scripts/common/` modules.
+- Domain logic (validation, path utils) remains in `helpers/` to avoid duplication.
+- Main CLI scripts in the root are thin wrappers that parse arguments and delegate to common modules.
+- Optional shell entrypoints in `scripts/entrypoint/` provide consistent interfaces.
+- All scripts follow the project's ESM module conventions.
 - For more details on usage, refer to the main `README.md` in the project root.
 - When modifying scripts, ensure they remain executable and preserve shebang lines if applicable.
 
 ## Examples
 
+- Check pod status: `npx fvtt-status`
+- Check status in JSON format: `npx fvtt-status --json`
+- Dry-run status check: `npx fvtt-status --dry-run`
+- Status with custom files: `npx fvtt-status -f custom-compose.yml -c custom-config.json`
+- Via shell entrypoint: `scripts/entrypoint/fvtt-status --help`
 - Validate config (no-cache): `npx scripts/validate-config.js ./container-config.json --no-cache`
 - Validate config with cache: `npx scripts/validate-config.js ./container-config.json /tmp/cache`
 - Generate and start dev pod: `npx fvtt-compose-gen -c container-config.json -o compose.dev.yml && npx fvtt-pod -f ./compose.dev.yml up -d`
