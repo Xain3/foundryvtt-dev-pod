@@ -15,6 +15,8 @@ $CommonScript = Join-Path $ScriptDir "common\XX-script-name.ps1"
 # TODO: Add any re-exports if required
 
 # CLI interface - delegate to common module
-if ($MyInvocation.InvocationName -ne '&') {
+# If the script is not dot-sourced (i.e., run directly), invoke the main workflow.
+# In PowerShell, $MyInvocation.InvocationName is '.' when dot-sourced.
+if ($MyInvocation.InvocationName -ne '.') {
   Invoke-MainWorkflow -Args $args
 }
