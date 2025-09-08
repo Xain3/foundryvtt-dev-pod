@@ -17,6 +17,11 @@ function runScript(scriptPath, args = [], env = {}) {
   };
 }
 
+function expectTargetExists(filePath) {
+  const exists = fs.existsSync(filePath);
+  expect(exists).toBe(true);
+}
+
 describe('wrapper scripts dry-run', () => {
   // Entry-point wrappers live in ../entrypoint, while .mjs files live in this common dir
   // Tests run from tests/unit/patches/entrypoint; wrappers live in
@@ -38,8 +43,7 @@ describe('wrapper scripts dry-run', () => {
     });
 
     test('target .mjs file exists', () => {
-      const exists = fs.existsSync(expectedViaWrapperAbs);
-      expect(exists).toBe(true);
+      expectTargetExists(expectedViaWrapperAbs);
     });
 
     test('prints help with -h/--help', () => {
@@ -70,8 +74,7 @@ describe('wrapper scripts dry-run', () => {
     });
 
     test('target .mjs file exists', () => {
-      const exists = fs.existsSync(expectedViaWrapperAbs);
-      expect(exists).toBe(true);
+      expectTargetExists(expectedViaWrapperAbs);
     });
 
     test('prints help with -h/--help', () => {
@@ -97,8 +100,7 @@ describe('wrapper scripts dry-run', () => {
     });
 
     test('target .mjs file exists', () => {
-      const exists = fs.existsSync(expectedViaWrapperAbs);
-      expect(exists).toBe(true);
+      expectTargetExists(expectedViaWrapperAbs);
     });
 
     test('prints help with -h/--help', () => {
