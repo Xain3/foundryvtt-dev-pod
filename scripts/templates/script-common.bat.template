@@ -34,7 +34,7 @@ REM ----------------------------------------------------------------------------
   )
 
   REM TODO: Add script-specific argument parsing
-  if "%~1"=="-" (
+  if "%~1:~0,1%"=="-" (
     echo Unknown flag: %~1 >&2
     exit /b 1
   ) else (
