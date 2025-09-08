@@ -25,7 +25,17 @@ REM ----------------------------------------------------------------------------
   setlocal enabledelayedexpansion
   set "ARG_IDX=1"
   :parse_args_loop
+  REM -----------------------------------------------------------------------------
+  REM Advanced batch argument parsing technique:
+  REM The following line uses triple percent signs (%%%ARG_IDX%%%) to dynamically
+  REM access the Nth command line argument (%1, %2, etc.) in a loop.
+  REM - %% expands to a single % in a CALLed line.
+  REM - %ARG_IDX% is replaced with the current argument index.
+  REM - So, call set "CUR_ARG=%%%ARG_IDX%%%" becomes, e.g., call set "CUR_ARG=%1"
+  REM This pattern is required because batch files do not support indirect variable expansion.
+  REM See: https://stackoverflow.com/questions/5034076/how-to-iterate-over-command-line-arguments-in-batch-file
   call set "CUR_ARG=%%%ARG_IDX%%%"
+  REM End advanced argument parsing explanation
   if "!CUR_ARG!"=="" goto :parse_done
 
   if "!CUR_ARG!"=="-h" (
