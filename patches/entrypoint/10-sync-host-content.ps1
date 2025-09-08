@@ -42,6 +42,10 @@ function Test-DryRun {
   if ($DryRun) { return $true }
   if ($Args -contains "--dry-run" -or $Args -contains "-n") { return $true }
   
+  # Check if dry-run flags got consumed by other parameters
+  if ($WrapperTarget -eq "--dry-run" -or $WrapperTarget -eq "-n") { return $true }
+  if ($WrapperExt -eq "--dry-run" -or $WrapperExt -eq "-n") { return $true }
+  
   return $false
 }
 
@@ -92,6 +96,11 @@ function Get-NodeExecutable {
 
 function Get-ScriptPath {
   param([hashtable]$Metadata, [string]$OverrideTarget, [string]$OverrideExt)
+  
+  # If OverrideTarget is a help or dry-run flag, treat it as no override
+  if ($OverrideTarget -eq "--help" -or $OverrideTarget -eq "-h" -or $OverrideTarget -eq "--dry-run" -or $OverrideTarget -eq "-n") {
+    $OverrideTarget = $null
+  }
   
   $scriptDir = $PSScriptRoot
   $commonDir = Resolve-Path (Join-Path $scriptDir '..\common') -ErrorAction SilentlyContinue
@@ -179,8 +188,8 @@ function Invoke-NodeScript {
 
 # --- Main Logic ---
 
-# Handle help
-if ($Help -or $RemainingArgs -contains "--help" -or $RemainingArgs -contains "-h") {
+# Handle help first (before any other processing)
+if ($Help -or $RemainingArgs -contains "--help" -or $RemainingArgs -contains "-h" -or $WrapperTarget -eq "--help" -or $WrapperTarget -eq "-h" -or $WrapperExt -eq "--help" -or $WrapperExt -eq "-h") {
   Show-Help
   exit 0
 }
