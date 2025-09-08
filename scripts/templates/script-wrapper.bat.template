@@ -18,6 +18,6 @@ REM Re-export functions for backwards compatibility (if needed)
 REM TODO: Add any re-exports if required
 
 REM CLI interface - delegate to common module
-if "%~0"=="%~f0" (
+if /I "%~nx0"=="%~nxf0" (
   call :run_main_workflow %*
 )
