@@ -15,3 +15,5 @@ patches/common/07-.mjs
 # Ignore local specs
 */.specs/local/*
 !*/.specs/local/README.md
+.dev-docs/.tmp/*
+!.dev-docs/.tmp/README.md
