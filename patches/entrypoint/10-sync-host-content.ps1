@@ -5,12 +5,10 @@
 # It mirrors the functionality of the corresponding .sh wrapper but uses PowerShell.
 #
 param(
-  [switch]$Help,
   [alias('h')]
-  [switch]$h,
-  [switch]$DryRun,
+  [switch]$Help,
   [alias('n')]
-  [switch]$n,
+  [switch]$DryRun,
   [string]$WrapperTarget,
   [string]$WrapperExt,
   [Parameter(ValueFromRemainingArguments = $true)]
@@ -41,15 +39,16 @@ function Test-DryRun {
   if ($env:DRY_RUN -and $env:DRY_RUN -ne "0") { return $true }
   
   # Check CLI flags
-  if ($DryRun -or $n) { return $true }
+  if ($DryRun) { return $true }
   if ($Args -contains "--dry-run" -or $Args -contains "-n") { return $true }
   
   return $false
 }
 
 function Show-Help {
+  $scriptName = Split-Path -Leaf $PSCommandPath
   Write-Host @"
-Usage: $($MyInvocation.MyCommand.Name) [options] [script-args...]
+Usage: $scriptName [options] [script-args...]
 
 PowerShell wrapper for patch entrypoints. Provides equivalent functionality
 to the shell wrapper system for Windows environments.
@@ -94,7 +93,7 @@ function Get-NodeExecutable {
 function Get-ScriptPath {
   param([hashtable]$Metadata, [string]$OverrideTarget, [string]$OverrideExt)
   
-  $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+  $scriptDir = $PSScriptRoot
   $commonDir = Resolve-Path (Join-Path $scriptDir '..\common') -ErrorAction SilentlyContinue
   if (-not $commonDir) {
     Write-Error "[patch][error] Could not locate common directory"
@@ -103,7 +102,7 @@ function Get-ScriptPath {
   
   $scriptName = if ($OverrideTarget) {
     $ext = if ($OverrideExt) { $OverrideExt.TrimStart('.') } else { 
-      $env:WRAPPER_SCRIPT_EXT -replace '^\.', '' -or 'mjs' 
+      if ($env:WRAPPER_SCRIPT_EXT) { $env:WRAPPER_SCRIPT_EXT -replace '^\.', '' } else { 'mjs' }
     }
     "$OverrideTarget.$ext"
   } else {
@@ -181,13 +180,13 @@ function Invoke-NodeScript {
 # --- Main Logic ---
 
 # Handle help
-if ($Help -or $h -or $RemainingArgs -contains "--help" -or $RemainingArgs -contains "-h") {
+if ($Help -or $RemainingArgs -contains "--help" -or $RemainingArgs -contains "-h") {
   Show-Help
   exit 0
 }
 
 # Get metadata from wrapper filename
-$wrapperName = Split-Path -Leaf $MyInvocation.MyCommand.Definition
+$wrapperName = Split-Path -Leaf $PSCommandPath
 $metadata = Get-WrapperMetadata $wrapperName
 
 # Check dry-run mode
@@ -207,8 +206,9 @@ $filteredArgs = $RemainingArgs | Where-Object {
 }
 
 # Set run mode (default for sync-host-content is sync-loop)
-$runMode = $env:WRAPPER_RUN_MODE -or "sync-loop"
-Write-Host "[patch] $($metadata.ProceduralNumber)-$($metadata.PatchName): Delegating to Node.js script (mode: $runMode)"
+$runMode = if ($env:WRAPPER_RUN_MODE) { $env:WRAPPER_RUN_MODE } else { "sync-loop" }
+$modeDescription = if ($isDryRun) { "$runMode, dry-run" } else { $runMode }
+Write-Host "[patch] $($metadata.ProceduralNumber)-$($metadata.PatchName): Delegating to Node.js script (mode: $modeDescription)"
 
 # Execute based on run mode
 if ($runMode -eq "sync-loop") {
