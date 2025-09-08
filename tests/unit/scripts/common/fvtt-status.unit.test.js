@@ -8,19 +8,29 @@ import { jest } from '@jest/globals';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { checkStatus } from '../../../../scripts/common/fvtt-status.mjs';
+// Mock child_process BEFORE importing the module under test (ESM)
+// Use unstable_mockModule for ESM-compatible mocking so that the import of the
+// module under test sees the mocked execSync.
+const execSyncMock = jest.fn(() => { throw new Error('Command not found'); });
+jest.unstable_mockModule('child_process', () => {
+  // Only provide the bits we need; tests do not rely on other child_process exports.
+  return {
+    execSync: (...args) => execSyncMock(...args)
+  };
+});
 
-// Mock child_process at module level
-const mockExecSync = jest.fn();
-jest.mock('child_process', () => ({
-  execSync: mockExecSync
-}));
+// Will hold dynamically imported symbols from module under test
+let checkStatus;
 
 describe('fvtt-status common module', () => {
   let tempDir;
   let originalCwd;
-  let composeFile;
-  let configFile;
+
+  beforeAll(async () => {
+    // Dynamically import after mocking child_process
+    const mod = await import('../../../../scripts/common/fvtt-status.mjs');
+    checkStatus = mod.checkStatus;
+  });
 
   beforeEach(() => {
     // Create temporary directory for test files
@@ -29,26 +39,26 @@ describe('fvtt-status common module', () => {
     process.chdir(tempDir);
 
     // Create test files
-    composeFile = path.join(tempDir, 'compose.dev.yml');
-    configFile = path.join(tempDir, 'container-config.json');
+    // composeFile and configFile are not used in tests
 
     // Mock console.log to prevent test output pollution
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'warn').mockImplementation(() => {});
-    
+
     // Clear mocks
     jest.clearAllMocks();
+    execSyncMock.mockClear();
   });
 
   afterEach(() => {
     // Restore original working directory
     process.chdir(originalCwd);
-    
+
     // Clean up temporary directory
     if (tempDir && fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
-    
+
     console.log.mockRestore();
     console.warn.mockRestore();
   });
@@ -57,7 +67,7 @@ describe('fvtt-status common module', () => {
     it('should detect compose file and config when present', async () => {
       // Create test files in working directory (not full path)
       fs.writeFileSync('compose.dev.yml', 'version: "3.8"\nservices:\n  test:\n    image: alpine');
-      
+
       const validConfig = {
         systems: { test: { name: "Test", manifest: "https://example.com/test.json" } },
         modules: {},
@@ -66,9 +76,10 @@ describe('fvtt-status common module', () => {
       fs.writeFileSync('container-config.json', JSON.stringify(validConfig, null, 2));
 
       // Mock docker availability
-      mockExecSync
-        .mockReturnValueOnce('Docker version')
-        .mockReturnValueOnce('docker-compose version');
+      // Simulate docker and docker-compose new style available
+      execSyncMock
+        .mockImplementationOnce(() => 'Docker version') // docker --version
+        .mockImplementationOnce(() => 'docker compose version'); // docker compose version
 
       const options = { json: true, dryRun: false };
       const result = await checkStatus(options);
@@ -102,22 +113,17 @@ describe('fvtt-status common module', () => {
     it('should handle missing docker', async () => {
       // Create test files
       fs.writeFileSync('compose.dev.yml', 'version: "3.8"\nservices:\n  test:\n    image: alpine');
-      
+
       const validConfig = {
         systems: {},
         modules: {},
         versions: { "13": { install: { systems: {}, modules: {} } } }
       };
       fs.writeFileSync('container-config.json', JSON.stringify(validConfig, null, 2));
-
-      // Mock docker not available - both commands should fail
-      mockExecSync.mockImplementation(() => {
-        throw new Error('Command not found');
-      });
-
+      // Ensure mock is in failure mode (default implementation throws)
+  execSyncMock.mockImplementation(() => { throw new Error('Command not found'); });
       const options = { json: true, dryRun: false };
       const result = await checkStatus(options);
-
       expect(result.dockerAvailable).toBe(false);
       expect(result.healthChecks.issues).toContain('Docker not available');
       expect(result.healthy).toBe(false);
@@ -126,7 +132,7 @@ describe('fvtt-status common module', () => {
     it('should handle dry-run mode', async () => {
       // Create test files
       fs.writeFileSync('compose.dev.yml', 'version: "3.8"\nservices:\n  test:\n    image: alpine');
-      
+
       const validConfig = {
         systems: {},
         modules: {},
@@ -135,9 +141,9 @@ describe('fvtt-status common module', () => {
       fs.writeFileSync('container-config.json', JSON.stringify(validConfig, null, 2));
 
       // Mock docker availability
-      mockExecSync
-        .mockReturnValueOnce('Docker version')
-        .mockReturnValueOnce('docker-compose version');
+      execSyncMock
+        .mockImplementationOnce(() => 'Docker version')
+        .mockImplementationOnce(() => 'docker compose version');
 
       const options = { json: true, dryRun: true };
       const result = await checkStatus(options);
@@ -149,7 +155,7 @@ describe('fvtt-status common module', () => {
     it('should use specified compose file', async () => {
       // Create custom compose file
       fs.writeFileSync('custom-compose.yml', 'version: "3.8"\nservices:\n  test:\n    image: alpine');
-      
+
       const validConfig = {
         systems: {},
         modules: {},
@@ -157,10 +163,10 @@ describe('fvtt-status common module', () => {
       };
       fs.writeFileSync('container-config.json', JSON.stringify(validConfig, null, 2));
 
-      const options = { 
+      const options = {
         composeFile: 'custom-compose.yml',
-        json: true, 
-        dryRun: false 
+        json: true,
+        dryRun: false
       };
       const result = await checkStatus(options);
 
@@ -177,10 +183,10 @@ describe('fvtt-status common module', () => {
       };
       fs.writeFileSync('container-config.json', JSON.stringify(validConfig, null, 2));
 
-      const options = { 
+      const options = {
         composeFile: 'missing-compose.yml',
-        json: true, 
-        dryRun: false 
+        json: true,
+        dryRun: false
       };
       const result = await checkStatus(options);
 
@@ -192,7 +198,7 @@ describe('fvtt-status common module', () => {
     it('should handle config validation errors', async () => {
       // Create compose file
       fs.writeFileSync('compose.dev.yml', 'version: "3.8"\nservices:\n  test:\n    image: alpine');
-      
+
       // Create invalid config
       const invalidConfig = {
         systems: { test: { name: "Test" } }, // Missing manifest/path
