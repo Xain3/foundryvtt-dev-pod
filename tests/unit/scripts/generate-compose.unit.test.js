@@ -544,7 +544,7 @@ describe('scripts/generate-compose.js', () => {
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_gcp');
     expect(result.topLevel.config_json_gcp).toHaveProperty('file');
-    expect(result.topLevel.config_json_gcp.file).toMatch(/^\/tmp\/secrets-gcp-\d+\.json$/);
+    expect(result.topLevel.config_json_gcp.file).toMatch(/^\/tmp\/secrets-gcp-[^/]+\/\d+\.json$/);
 
     expect(result.serviceRef).toEqual([{
       source: 'config_json_gcp',
@@ -657,7 +657,7 @@ describe('scripts/generate-compose.js', () => {
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_azure');
     expect(result.topLevel.config_json_azure).toHaveProperty('file');
-    expect(result.topLevel.config_json_azure.file).toMatch(/^\/tmp\/secrets-azure-\d+\.json$/);
+    expect(result.topLevel.config_json_azure.file).toMatch(/^\/tmp\/secrets-azure-[^/]+\/\d+\.json$/);
 
     expect(result.serviceRef).toEqual([{
       source: 'config_json_azure',
@@ -733,7 +733,7 @@ describe('scripts/generate-compose.js', () => {
     expect(result.topLevel).toBeTruthy();
     expect(Object.keys(result.topLevel)).toContain('config_json_aws');
     expect(result.topLevel.config_json_aws).toHaveProperty('file');
-    expect(result.topLevel.config_json_aws.file).toMatch(/^\/tmp\/secrets-aws-\d+\.json$/);
+    expect(result.topLevel.config_json_aws.file).toMatch(/^\/tmp\/secrets-aws-[^/]+\/\d+\.json$/);
 
     expect(result.serviceRef).toEqual([{
       source: 'config_json_aws',
