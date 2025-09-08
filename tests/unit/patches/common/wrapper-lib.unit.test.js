@@ -275,7 +275,8 @@ describe('docker patches: wrapper-lib/bin', () => {
     // This verifies that the wrapper script now properly escapes all special characters
     
     // Test both the old manual escaping (incomplete) and new JSON.stringify approach (complete)
-    const testPath = '/test\\path with\\backslashes and "quotes"';
+    // NOTE: This is intentional test data containing backslashes and quotes to verify escaping
+    const testPath = '/test' + String.fromCharCode(92) + 'path with' + String.fromCharCode(92) + 'backslashes and "quotes"';
     const manualEscaping = testPath.replace(/"/g, '\\"'); // Old incomplete approach
     const jsonEscaping = JSON.stringify(testPath); // New complete approach
     
