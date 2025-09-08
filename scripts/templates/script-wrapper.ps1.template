@@ -1,0 +1,22 @@
+# -----------------------------------------------------------------------------
+# @file XX-script-name.ps1
+# @description Thin CLI wrapper for [SCRIPT_DESCRIPTION]
+# @path scripts/XX-script-name.ps1
+# -----------------------------------------------------------------------------
+
+# Import all functionality from the common module
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$CommonScript = Join-Path $ScriptDir "common\XX-script-name.ps1"
+
+# Import the common module
+. $CommonScript
+
+# Re-export functions for backwards compatibility
+# TODO: Add any re-exports if required
+
+# CLI interface - delegate to common module
+# If the script is not dot-sourced (i.e., run directly), invoke the main workflow.
+# In PowerShell, $MyInvocation.InvocationName is '.' when dot-sourced.
+if ($MyInvocation.InvocationName -ne '.') {
+  Invoke-MainWorkflow -Args $args
+}

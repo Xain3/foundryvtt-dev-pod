@@ -1,0 +1,26 @@
+@echo off
+setlocal enabledelayedexpansion
+
+REM -----------------------------------------------------------------------------
+REM @file XX-script-name.bat
+REM @description Thin CLI wrapper for [SCRIPT_DESCRIPTION]
+REM @path scripts\XX-script-name.bat
+REM -----------------------------------------------------------------------------
+
+REM Import all functionality from the common module
+set "SCRIPT_DIR=%~dp0"
+set "COMMON_SCRIPT=%SCRIPT_DIR%common\XX-script-name.bat"
+
+REM Call the common module
+call "%COMMON_SCRIPT%"
+
+REM Re-export functions for backwards compatibility (if needed)
+REM TODO: Add any re-exports if required
+
+REM CLI interface - delegate to common module
+REM Detect if script is run directly (not via CALL)
+goto :main
+exit /b
+
+:main
+call :run_main_workflow %*
