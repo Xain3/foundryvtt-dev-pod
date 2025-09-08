@@ -38,6 +38,7 @@ The scripts directory follows a modular pattern inspired by the `patches/` syste
 ## Overview <!-- omit in toc -->
 
 The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules (for domain logic) or `common/` modules (for script orchestration), ensuring maintainability and testability.
+The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules (for domain logic) or `common/` modules (for script orchestration), ensuring maintainability and testability.
 
 **Contents:**
 
@@ -56,6 +57,8 @@ The scripts in this directory serve as the primary interfaces for interacting wi
   - [`generate-compose.constants.js`](#generate-composeconstantsjs)
 - [Common Modules](#common-modules)
   - [`common/validate-config.mjs`](#commonvalidate-configmjs)
+- [Common Modules](#common-modules-1)
+  - [`common/validate-config.mjs`](#commonvalidate-configmjs-1)
 - [API](#api)
   - [`fvtt-status.mjs` Options](#fvtt-statusmjs-options)
   - [`generate-compose.js` Options](#generate-composejs-options)
@@ -92,7 +95,9 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 ### `validate-config.js`
 
 - **Purpose**: Thin CLI wrapper for container configuration validation.
+- **Purpose**: Thin CLI wrapper for container configuration validation.
 - **Usage**: `npx scripts/validate-config.js <config-path> [cache-dir]` or with `--no-cache` to force fresh validation.
+- **Details**: Delegates to `common/validate-config.mjs` for orchestration logic and `helpers/config-validator.js` for core validation functionality.
 - **Details**: Delegates to `common/validate-config.mjs` for orchestration logic and `helpers/config-validator.js` for core validation functionality.
 
 ### `validate-package-json.js`
@@ -112,6 +117,14 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 - **Purpose**: Contains constants used by `generate-compose.js`.
 - **Usage**: Internal module, not directly invoked.
 - **Details**: Defines shared constants for compose generation.
+
+## Common Modules
+
+### `common/validate-config.mjs`
+
+- **Purpose**: Script-specific orchestration logic for configuration validation.
+- **Usage**: Imported by `validate-config.js` and tested independently.
+- **Details**: Contains CLI argument parsing, validation workflow orchestration, and logging functions. Wraps `helpers/config-validator.js` for actual validation logic.
 
 ## Common Modules
 

@@ -19,6 +19,21 @@
     "#examples/*": "./examples/*",
     "#schemas/*": "./schemas/*"
   },
+  "imports": {
+    "#/*": "./*",
+    "#scripts/*": "./scripts/*",
+    "#helpers/*": "./helpers/*",
+    "#config/*": "./config/*",
+    "#patches/*": "./patches/*",
+    "#patches/entrypoint/*": "./patches/entrypoint/*",
+    "#patches/common/*": "./patches/common/*",
+    "#tests/unit/*": "./tests/unit/*",
+    "#tests/integration/*": "./tests/integration/*",
+    "#tests/utils/*": "./tests/utils/*",
+    "#docs/*": "./docs/*",
+    "#examples/*": "./examples/*",
+    "#schemas/*": "./schemas/*"
+  },
   "exports": {
     ".": {
       "import": "./helpers/config-validator.js"
@@ -49,16 +64,7 @@
     "fvtt-status": "scripts/fvtt-status.mjs"
   },
   "files": [
-<<<<<<< HEAD
-    "scripts/generate-compose.js",
-    "scripts/pod-handler.sh",
-    "scripts/fvtt-status.mjs",
-    "scripts/validate-config.js",
-    "scripts/common/",
-    "scripts/entrypoint/",
-=======
     "scripts/",
->>>>>>> c131b7c6fb3eca9252b8793302e331145bf3cdd4
     "helpers/",
     "patches/",
     "babel.config.cjs",
