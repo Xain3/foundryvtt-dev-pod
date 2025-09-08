@@ -11,6 +11,14 @@ import * as generateCompose from '#scripts/generate-compose.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Shared expectation for default parseArgs output to avoid duplication
+const DEFAULT_PARSE_ARGS = {
+  config: 'container-config.json',
+  out: '',
+  dryRun: false,
+  secretsMode: 'auto'
+};
+
 function runNode(args, opts = {}) {
   return childProcess.execSync(`node ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
 }
@@ -35,10 +43,7 @@ describe('scripts/generate-compose.js', () => {
   describe('parseArgs function', () => {
     test('parses default arguments correctly', () => {
       const args = parseArgs(['node', 'script.js']);
-      expect(args.config).toBe('container-config.json');
-      expect(args.out).toBe('');
-      expect(args.dryRun).toBe(false);
-      expect(args.secretsMode).toBe('auto');
+      expect(args).toMatchObject(DEFAULT_PARSE_ARGS);
     });
 
     test('parses config argument with -c', () => {
@@ -448,8 +453,8 @@ describe('scripts/generate-compose.js', () => {
     const doc = yaml.load(output);
 
     expect(doc.services['foundry-v13']).toBeTruthy();
-  // When tag is provided as 'release' in version_params this remains 'release'
-  expect(doc.services['foundry-v13'].image).toBe('felddy/foundryvtt:release');
+    // When tag is provided as 'release' in version_params this remains 'release'
+    expect(doc.services['foundry-v13'].image).toBe('felddy/foundryvtt:release');
     expect(doc.services['foundry-v13'].ports[0]).toBe('30013:30000');
     expect(doc.services['foundry-v13'].volumes.some(v => typeof v === 'object' && v.source === './shared/v13')).toBe(true);
     expect(doc.services['foundry-v13'].env_file.includes('./env/.v13.env')).toBe(true);
