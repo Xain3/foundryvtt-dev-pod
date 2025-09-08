@@ -1,0 +1,4 @@
+{
+  "ignoreGlobs": ["tests/*", "coverage/*", "examples/*"],
+  "requiredFields": ["@file", "@description", "@path"]
+}
