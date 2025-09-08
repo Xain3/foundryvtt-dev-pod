@@ -9,6 +9,8 @@ The directory follows an entrypoint + common pattern to improve testability, reu
 ```
 scripts/
 ├── entrypoint/          # Thin shell wrappers (optional)
+│   ├── XX-script-entrypoint.template  # Template for new script entrypoints
+│   └── fvtt-status      # Example entrypoint
 ├── common/              # Script-specific orchestration logic (Node .mjs modules)
 ├── *.mjs                # Main CLI entry points (Node scripts)
 └── README.md           # This file
@@ -186,6 +188,30 @@ No CLI options. Validates package.json against SchemaStore schema. Uses `USE_LOC
 No CLI options. Runs multiple validations on package.json.
 
 ## Development Notes
+
+### Creating New CLI Tools
+
+To create a new CLI tool following the entrypoint+common pattern:
+
+1. **Copy the template**: Use `scripts/entrypoint/XX-script-entrypoint.template` as a starting point
+   ```bash
+   cp scripts/entrypoint/XX-script-entrypoint.template scripts/entrypoint/my-tool
+   chmod +x scripts/entrypoint/my-tool
+   ```
+
+2. **Customize the template**: Replace placeholders in the copied file:
+   - `{SCRIPT_NAME}` → your tool name (e.g., "my-tool")
+   - `{TOOL_DESCRIPTION}` → brief description of your tool
+
+3. **Create the Node.js files**:
+   - `scripts/my-tool.mjs` - Main CLI entry point with argument parsing
+   - `scripts/common/my-tool.mjs` - Script-specific orchestration logic
+
+4. **Add to package.json**: Include your tool in the `bin` section for npm installation
+
+5. **Write tests**: Add integration tests in `tests/integration/` for end-to-end CLI behavior
+
+### Architecture Guidelines
 
 - These scripts follow the entrypoint + common pattern for improved testability and consistency.
 - Script-specific orchestration logic is placed in `scripts/common/` modules.
