@@ -120,6 +120,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateConfig } from './validate-config.js';
@@ -201,6 +202,44 @@ function parseArgs(argv) {
 }
 
 let secretTempCounter = 0;
+// Track temporary files for cleanup
+const tempSecretFiles = new Set();
+
+/**
+ * Register cleanup handler for temporary secret files on process exit.
+ * Ensures temporary files containing sensitive data are removed.
+ */
+function registerCleanupHandlers() {
+  const cleanup = () => {
+    for (const filePath of tempSecretFiles) {
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch {
+        // Ignore cleanup errors to avoid blocking exit
+      }
+    }
+    tempSecretFiles.clear();
+  };
+  
+  process.on('exit', cleanup);
+  process.on('SIGINT', () => { cleanup(); process.exit(0); });
+  process.on('SIGTERM', () => { cleanup(); process.exit(0); });
+  process.on('SIGUSR1', () => { cleanup(); process.exit(0); });
+  process.on('SIGUSR2', () => { cleanup(); process.exit(0); });
+  process.on('uncaughtException', (err) => { cleanup(); throw err; });
+}
+
+// Register cleanup handlers once
+let cleanupRegistered = false;
+function ensureCleanupRegistered() {
+  if (!cleanupRegistered) {
+    registerCleanupHandlers();
+    cleanupRegistered = true;
+  }
+}
+
 /**
  * Generate a monotonic (time + counter) numeric string id used for temp secret file names.
  * Bounded counter ensures predictable length in tests.
@@ -211,6 +250,35 @@ function nextTempId() {
   const upperBoundHex = 0xffff; // prevent unbounded growth
   secretTempCounter = (secretTempCounter + 1) & upperBoundHex; // bounded
   return `${now}${secretTempCounter}`; // digits only for tests
+}
+
+/**
+ * Create a secure temporary file for sensitive secret content.
+ * Uses secure permissions (0o600) and tracks file for cleanup.
+ * @param {string} provider Provider suffix (e.g., 'gcp', 'azure', 'aws')
+ * @param {string} content Secret content to write
+ * @returns {string} Path to the created temporary file
+ * @export
+ */
+function createSecretTempFile(provider, content) {
+  ensureCleanupRegistered();
+  
+  // Create secure temporary directory
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `secrets-${provider}-`));
+  const tempFile = path.join(tempDir, `${nextTempId()}.json`);
+  
+  // Create file with secure permissions (read/write for owner only)
+  const fd = fs.openSync(tempFile, 'w', 0o600);
+  try {
+    fs.writeSync(fd, content, 'utf8');
+  } finally {
+    fs.closeSync(fd);
+  }
+  
+  // Track for cleanup
+  tempSecretFiles.add(tempFile);
+  
+  return tempFile;
 }
 
 /**
@@ -312,14 +380,6 @@ function experimentalWarning(provider) {
   const proper = map[provider.toLowerCase()] || provider;
   return `[experimental] ${proper} secrets mode is experimental and untested; behavior and interface may change.`;
 }
-/**
- * Build temporary secret file path.
- * @param {string} provider Provider suffix
- * @param {string} id Unique id
- * @returns {string} Absolute-ish /tmp path
- * @export
- */
-function tempSecretPath(provider, id) { return `/tmp/secrets-${provider}-${id}.json`; }
 
 /**
  * Resolve secrets configuration based on CLI/environment options.
@@ -358,58 +418,55 @@ function resolveSecrets(opts, retrieveGcpSecretFn = retrieveGcpSecret, retrieveA
   if (mode === 'gcp' || (mode === 'auto' && opts.secretsGcpProject && opts.secretsGcpSecret)) {
     console.warn('[experimental] GCP secrets mode is experimental and untested; behavior and interface may change.');
     const secretName = 'config_json_gcp';
-    const gcpSecretFile = `/tmp/secrets-gcp-${nextTempId()}.json`;
 
-    // Create a temporary file with the GCP secret content
+    // Create a secure temporary file with the GCP secret content
     try {
       const secretContent = retrieveGcpSecretFn(opts.secretsGcpProject, opts.secretsGcpSecret);
-      fs.writeFileSync(gcpSecretFile, secretContent, 'utf8');
+      const gcpSecretFile = createSecretTempFile('gcp', secretContent);
+      
+      return {
+        topLevel: { [secretName]: { file: gcpSecretFile } },
+        serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+      };
     } catch (error) {
       throw new Error(`Failed to retrieve GCP secret: ${error.message}`);
     }
-
-    return {
-      topLevel: { [secretName]: { file: gcpSecretFile } },
-      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-    };
   }
 
   if (mode === 'azure' || (mode === 'auto' && opts.secretsAzureVault && opts.secretsAzureSecret)) {
     console.warn('[experimental] Azure secrets mode is experimental and untested; behavior and interface may change.');
     const secretName = 'config_json_azure';
-    const azureSecretFile = `/tmp/secrets-azure-${nextTempId()}.json`;
 
-    // Create a temporary file with the Azure secret content
+    // Create a secure temporary file with the Azure secret content
     try {
       const secretContent = retrieveAzureSecretFn(opts.secretsAzureVault, opts.secretsAzureSecret);
-      fs.writeFileSync(azureSecretFile, secretContent, 'utf8');
+      const azureSecretFile = createSecretTempFile('azure', secretContent);
+      
+      return {
+        topLevel: { [secretName]: { file: azureSecretFile } },
+        serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+      };
     } catch (error) {
       throw new Error(`Failed to retrieve Azure secret: ${error.message}`);
     }
-
-    return {
-      topLevel: { [secretName]: { file: azureSecretFile } },
-      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-    };
   }
 
   if (mode === 'aws' || (mode === 'auto' && opts.secretsAwsRegion && opts.secretsAwsSecret)) {
     console.warn('[experimental] AWS secrets mode is experimental and untested; behavior and interface may change.');
     const secretName = 'config_json_aws';
-    const awsSecretFile = `/tmp/secrets-aws-${nextTempId()}.json`;
 
-    // Create a temporary file with the AWS secret content
+    // Create a secure temporary file with the AWS secret content
     try {
       const secretContent = retrieveAwsSecretFn(opts.secretsAwsRegion, opts.secretsAwsSecret);
-      fs.writeFileSync(awsSecretFile, secretContent, 'utf8');
+      const awsSecretFile = createSecretTempFile('aws', secretContent);
+      
+      return {
+        topLevel: { [secretName]: { file: awsSecretFile } },
+        serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
+      };
     } catch (error) {
       throw new Error(`Failed to retrieve AWS secret: ${error.message}`);
     }
-
-    return {
-      topLevel: { [secretName]: { file: awsSecretFile } },
-      serviceRef: [ { source: secretName, target: opts.secretsTarget || 'config.json' } ],
-    };
   }
   // fallthrough to unified secrets logic below
   // No other modes matched; default to file mode fallback using provided secretsFile
@@ -730,7 +787,7 @@ export {
 	envFiles,
 	createFoundryService,
 	experimentalWarning,
-	tempSecretPath,
+	createSecretTempFile,
   deriveVersionDefaults,
   buildServiceEntry,
 	// Existing API
