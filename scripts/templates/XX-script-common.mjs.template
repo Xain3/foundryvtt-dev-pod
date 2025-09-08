@@ -1,0 +1,100 @@
+/**
+ * @file XX-script-name.mjs
+ * @description Common module for [SCRIPT_DESCRIPTION] orchestration logic
+ * @path scripts/common/XX-script-name.mjs
+ */
+
+import path from 'node:path';
+// TODO: Import domain logic from helpers as needed
+// Examples:
+// import { SomeValidator } from '#helpers/some-validator.js';
+// import { pathUtils } from '#helpers/path-utils.js';
+
+/**
+ * Parse command line arguments for this script.
+ * @param {string[]} args - Command line arguments
+ * @returns {Object|null} Parsed arguments or null if parsing failed
+ */
+export function parseCommandLineArgs(args) {
+  const options = {
+    // TODO: Define default options
+    help: false,
+    // Add script-specific options here
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    switch (arg) {
+      case '-h':
+      case '--help':
+        options.help = true;
+        break;
+      // TODO: Add script-specific argument parsing
+      default:
+        // Handle positional arguments or unknown flags
+        if (arg.startsWith('-')) {
+          console.error(`Unknown flag: ${arg}`);
+          return null;
+        }
+        // TODO: Handle positional arguments
+        break;
+    }
+  }
+
+  return options;
+}
+
+/**
+ * Show help message for this script.
+ */
+export function showHelpMessage() {
+  console.log(`
+Usage: node scripts/XX-script-name.js [options]
+
+Description:
+  [DETAILED_SCRIPT_DESCRIPTION]
+
+Options:
+  -h, --help     Show this help message
+  
+  TODO: Add script-specific options here
+
+Examples:
+  node scripts/XX-script-name.js
+  TODO: Add usage examples
+`);
+}
+
+/**
+ * Main workflow function that orchestrates the script logic.
+ * @param {string[]} args - Command line arguments
+ * @returns {Promise<void>} Promise that resolves when workflow completes
+ */
+export async function runMainWorkflow(args) {
+  try {
+    const options = parseCommandLineArgs(args);
+    
+    if (!options) {
+      process.exit(1);
+    }
+    
+    if (options.help) {
+      showHelpMessage();
+      return;
+    }
+
+    // TODO: Implement main workflow logic
+    // This should orchestrate calls to domain logic in helpers/
+    // and handle CLI-specific concerns like output formatting
+    
+    console.log('TODO: Implement main workflow');
+    
+  } catch (error) {
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
+}
+
+// TODO: Add additional exported functions as needed
+// Remember: Keep orchestration logic here, domain logic in helpers/
