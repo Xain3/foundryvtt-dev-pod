@@ -22,28 +22,40 @@ REM ----------------------------------------------------------------------------
   set "HELP=false"
   REM Add script-specific options here
 
-  if "%~1"=="" goto :parse_done
+  setlocal enabledelayedexpansion
+  set "ARG_IDX=1"
+  :parse_args_loop
+  call set "CUR_ARG=%%%ARG_IDX%%%"
+  if "!CUR_ARG!"=="" goto :parse_done
 
-  if "%~1"=="-h" (
+  if "!CUR_ARG!"=="-h" (
     set "HELP=true"
-    shift & goto :parse_command_line_args
+    set /a ARG_IDX+=1
+    goto :parse_args_loop
   )
-  if "%~1"=="--help" (
+  if "!CUR_ARG!"=="--help" (
     set "HELP=true"
-    shift & goto :parse_command_line_args
+    set /a ARG_IDX+=1
+    goto :parse_args_loop
   )
 
   REM TODO: Add script-specific argument parsing
-  if "%~1:~0,1%"=="-" (
-    echo Unknown flag: %~1 >&2
+  if "!CUR_ARG:~0,1!"=="-" (
+    echo Unknown flag: !CUR_ARG! >&2
+    endlocal
     exit /b 1
   ) else (
     REM TODO: Handle positional arguments
-    echo Unexpected positional argument: %~1 >&2
+    echo Unexpected positional argument: !CUR_ARG! >&2
+    endlocal
     exit /b 1
   )
 
+  set /a ARG_IDX+=1
+  goto :parse_args_loop
+
   :parse_done
+  endlocal
   goto :eof
 
 REM -----------------------------------------------------------------------------
