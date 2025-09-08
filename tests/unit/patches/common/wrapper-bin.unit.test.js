@@ -47,7 +47,7 @@ describe('wrapper-bin.sh thin wrappers', () => {
       env: { ...process.env, DRY_RUN: '1', WRAPPER_TEST_MODE: '1' },
     });
     expect(res.code).toBe(0);
-  expect(res.stdout).toMatch(/Would run initial sync: [\s\S]*sync-host-content\.mjs[\s\S]* --initial-only/);
+  expect(res.stdout).toMatch(/Would run initial sync: .*sync-host-content\.mjs.* --initial-only/s);
   });
 
   it('accepts --wrapper-target overrides (comma separated)', async () => {
