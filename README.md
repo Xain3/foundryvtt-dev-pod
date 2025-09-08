@@ -199,15 +199,35 @@ This project supports path aliases for cleaner imports and better IDE support:
 - `#/*` - Project root
 - `#scripts/*` - Scripts directory
 - `#helpers/*` - Helper modules
-- `#config/*` - Configuration files
-- `#patches/*` - Patch system
-- `#patches/entrypoint/*` - Patch entry points
-- `#patches/common/*` - Common patch utilities
-- `#tests/unit/*` - Unit tests
-- `#tests/integration/*` - Integration tests
-- `#docs/*` - Documentation
-- `#examples/*` - Example configurations
-- `#schemas/*` - JSON schemas
+
+## Automated Header Enforcement
+
+The repository enforces JSDoc-style file headers on source files via a lightweight script and CI check.
+
+- Local check: `npm run check:headers`
+- Script: `scripts/check-file-headers.mjs`
+- CI: `.github/workflows/header-check.yml` (runs on pull requests)
+
+
+Customize requirements by editing `header-check.config.json` at the repository root.
+
+`#config/*` - Configuration files
+
+`#patches/*` - Patch system
+
+`#patches/entrypoint/*` - Patch entry points
+
+`#patches/common/*` - Common patch utilities
+
+`#tests/unit/*` - Unit tests
+
+`#tests/integration/*` - Integration tests
+
+`#docs/*` - Documentation
+
+`#examples/*` - Example configurations
+
+`#schemas/*` - JSON schemas
 
 **Package Exports:**
 External projects can import modules using the package name:
