@@ -25,6 +25,16 @@ The scripts directory follows a modular pattern inspired by the `patches/` syste
 - **Pattern**: Similar to `patches/entrypoint/` - thin shell scripts that delegate to common modules
 - **Usage**: Currently unused, reserved for future shell wrapper needs
 
+## Design Principles
+
+1. **No duplication of `helpers/`**: The `helpers/` directory remains the single source of project-level domain logic (validation, path utils, etc.).
+
+2. **`scripts/common/`**: Contains script-specific orchestration helpers that are not suitable for `helpers/` (CLI option normalization, orchestration logic, script-specific utilities that wrap `helpers/` functions).
+
+3. **`scripts/entrypoint/`**: Optional thin shell wrappers that provide a consistent interface and could be extended with shell-level features.
+
+4. **Main CLI scripts**: The `*.mjs` files in the scripts root are the primary CLI entry points that parse arguments and call into `scripts/common/` modules.
+
 ## Overview <!-- omit in toc -->
 
 The scripts in this directory serve as the primary interfaces for interacting with the project's core functionality. They are kept thin to delegate complex logic to the `helpers/` modules (for domain logic) or `common/` modules (for script orchestration), ensuring maintainability and testability.
@@ -35,7 +45,9 @@ The scripts in this directory serve as the primary interfaces for interacting wi
   - [`scripts/` (CLI entrypoints)](#scripts-cli-entrypoints)
   - [`scripts/common/` (Script orchestration modules)](#scriptscommon-script-orchestration-modules)
   - [`scripts/entrypoint/` (Optional shell wrappers)](#scriptsentrypoint-optional-shell-wrappers)
+- [Design Principles](#design-principles)
 - [Scripts](#scripts)
+  - [`fvtt-status.mjs`](#fvtt-statusmjs)
   - [`generate-compose.js`](#generate-composejs)
   - [`pod-handler.sh`](#pod-handlersh)
   - [`validate-config.js`](#validate-configjs)
@@ -45,15 +57,24 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 - [Common Modules](#common-modules)
   - [`common/validate-config.mjs`](#commonvalidate-configmjs)
 - [API](#api)
+  - [`fvtt-status.mjs` Options](#fvtt-statusmjs-options)
   - [`generate-compose.js` Options](#generate-composejs-options)
   - [`pod-handler.sh` Options](#pod-handlersh-options)
   - [`validate-config.js` Options](#validate-configjs-options)
   - [`validate-package-json.js` Options](#validate-package-jsonjs-options)
   - [`validate-package.sh` Options](#validate-packagesh-options)
 - [Development Notes](#development-notes)
+  - [Creating New CLI Tools](#creating-new-cli-tools)
+  - [Architecture Guidelines](#architecture-guidelines)
 - [Examples](#examples)
 
 ## Scripts
+
+### `fvtt-status.mjs`
+
+- **Purpose**: FoundryVTT development pod status checker.
+- **Usage**: `npx fvtt-status --json` or `fvtt-status --dry-run`
+- **Details**: Provides comprehensive status overview including pod detection, compose validation, service status, and health checks. Uses orchestration logic from `scripts/common/fvtt-status.mjs` and domain logic from `helpers/config-validator.js`.
 
 ### `generate-compose.js`
 
@@ -102,6 +123,23 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 ## API
 
 This section details the command-line interfaces for the executable scripts in this directory.
+
+### `fvtt-status.mjs` Options
+
+- `-f, --file <compose.yml>`: Path to docker compose file (auto-detected if not specified)
+- `-c, --config <config.json>`: Path to container config file (default: container-config.json)
+- `--json`: Output status in JSON format
+- `--verbose, -v`: Show detailed information
+- `--dry-run, -n`: Show what checks would be performed without executing them
+- `-h, --help`: Show help information
+
+Exit codes:
+
+- `0`: Status check successful
+- `1`: General error (invalid arguments, etc.)
+- `2`: Pod not detected or configuration invalid
+- `3`: Docker/compose not available
+- `4`: Services unhealthy or not accessible
 
 ### `generate-compose.js` Options
 
@@ -178,6 +216,31 @@ No CLI options. Runs multiple validations on package.json.
 
 ## Development Notes
 
+### Creating New CLI Tools
+
+To create a new CLI tool following the entrypoint+common pattern:
+
+1. **Copy the template**: Use `scripts/entrypoint/XX-script-entrypoint.template` as a starting point
+
+   ```bash
+   cp scripts/entrypoint/XX-script-entrypoint.template scripts/entrypoint/my-tool
+   chmod +x scripts/entrypoint/my-tool
+   ```
+
+2. **Customize the template**: Replace placeholders in the copied file:
+   - `{SCRIPT_NAME}` → your tool name (e.g., "my-tool")
+   - `{TOOL_DESCRIPTION}` → brief description of your tool
+
+3. **Create the Node.js files**:
+   - `scripts/my-tool.mjs` - Main CLI entry point with argument parsing
+   - `scripts/common/my-tool.mjs` - Script-specific orchestration logic
+
+4. **Add to package.json**: Include your tool in the `bin` section for npm installation
+
+5. **Write tests**: Add integration tests in `tests/integration/` for end-to-end CLI behavior
+
+### Architecture Guidelines
+
 - These scripts follow a modular pattern: CLI scripts (thin wrappers) delegate to `common/` modules (script orchestration) or `helpers/` (domain logic).
 - **Domain logic belongs in `helpers/`** - use for config validation, path resolution, and other reusable functionality.
 - **Script orchestration belongs in `common/`** - use for CLI parsing, workflow coordination, and script-specific utilities.
@@ -188,6 +251,11 @@ No CLI options. Runs multiple validations on package.json.
 
 ## Examples
 
+- Check pod status: `npx fvtt-status`
+- Check status in JSON format: `npx fvtt-status --json`
+- Dry-run status check: `npx fvtt-status --dry-run`
+- Status with custom files: `npx fvtt-status -f custom-compose.yml -c custom-config.json`
+- Via shell entrypoint: `scripts/entrypoint/fvtt-status --help`
 - Validate config (no-cache): `npx scripts/validate-config.js ./container-config.json --no-cache`
 - Validate config with cache: `npx scripts/validate-config.js ./container-config.json /tmp/cache`
 - Generate and start dev pod: `npx fvtt-compose-gen -c container-config.json -o compose.dev.yml && npx fvtt-pod -f ./compose.dev.yml up -d`

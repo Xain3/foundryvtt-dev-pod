@@ -30,6 +30,8 @@
     "./jsconfig.json": "./jsconfig.json",
     "./*": "./*",
     "./scripts/*": "./scripts/*",
+    "./scripts/common/*": "./scripts/common/*",
+    "./scripts/entrypoint/*": "./scripts/entrypoint/*",
     "./helpers/*": "./helpers/*",
     "./config/*": "./config/*",
     "./patches/*": "./patches/*",
@@ -43,7 +45,8 @@
   },
   "bin": {
     "fvtt-compose-gen": "scripts/generate-compose.js",
-    "fvtt-pod": "scripts/pod-handler.sh"
+    "fvtt-pod": "scripts/pod-handler.sh",
+    "fvtt-status": "scripts/fvtt-status.mjs"
   },
   "files": [
     "scripts/",

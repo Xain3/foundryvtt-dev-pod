@@ -13,5 +13,5 @@ patches/entrypoint/07-.sh
 patches/common/07-.mjs
 
 # Ignore local specs
-.specs/local/*
-!.specs/local/README.md
+*/.specs/local/*
+!*/.specs/local/README.md
