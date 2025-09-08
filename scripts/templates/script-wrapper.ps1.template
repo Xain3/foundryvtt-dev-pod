@@ -15,6 +15,6 @@ $CommonScript = Join-Path $ScriptDir "common\XX-script-name.ps1"
 # TODO: Add any re-exports if required
 
 # CLI interface - delegate to common module
-if ($MyInvocation.InvocationName -ne '.') {
+if ($MyInvocation.InvocationName -ne '&') {
   Invoke-MainWorkflow -Args $args
 }
