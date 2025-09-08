@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+
 /**
  * @file install-components.mjs
- * @description Installs systems, modules, and worlds based on container-config, supporting manifest URLs and local paths with caching, retries, and atomic directory installs.
+ * @description Installs systems, modules, and worlds based on container-config, supporting manifest URLs and local paths with caching, retries, and atomic directory installs (patch phase logic).
+ * @path patches/common/install-components.mjs
  */
 import process from "process";
 import { ComponentInstaller } from "./helpers/componentInstaller.mjs";
