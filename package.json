@@ -19,21 +19,6 @@
     "#examples/*": "./examples/*",
     "#schemas/*": "./schemas/*"
   },
-  "imports": {
-    "#/*": "./*",
-    "#scripts/*": "./scripts/*",
-    "#helpers/*": "./helpers/*",
-    "#config/*": "./config/*",
-    "#patches/*": "./patches/*",
-    "#patches/entrypoint/*": "./patches/entrypoint/*",
-    "#patches/common/*": "./patches/common/*",
-    "#tests/unit/*": "./tests/unit/*",
-    "#tests/integration/*": "./tests/integration/*",
-    "#tests/utils/*": "./tests/utils/*",
-    "#docs/*": "./docs/*",
-    "#examples/*": "./examples/*",
-    "#schemas/*": "./schemas/*"
-  },
   "exports": {
     ".": {
       "import": "./helpers/config-validator.js"
