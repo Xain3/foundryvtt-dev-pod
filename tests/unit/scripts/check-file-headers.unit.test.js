@@ -1,3 +1,9 @@
+/**
+ * @file check-file-headers.unit.test.js
+ * @description Unit tests for the check-file-headers.mjs script.
+ * @path tests/unit/scripts/check-file-headers.unit.test.js
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';

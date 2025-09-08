@@ -1,3 +1,9 @@
+/**
+ * @file hc-check-headers-changed-files.cjs
+ * @description Determine changed JS files vs a base ref and run header checks + emit GitHub Actions outputs.
+ * @path .github/scripts/hc-check-headers-changed-files.cjs
+ */
+
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
