@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# @file XX-script-name.sh
+# @description Thin CLI wrapper for [SCRIPT_DESCRIPTION]
+# @path scripts/XX-script-name.sh
+# -----------------------------------------------------------------------------
+
+# Import all functionality from the common module
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_SCRIPT="${SCRIPT_DIR}/common/XX-script-name.sh"
+
+# Source the common module
+# shellcheck disable=SC1090
+source "$COMMON_SCRIPT"
+
+# Re-export functions for backwards compatibility (if needed)
+# TODO: Add any re-exports if required
+
+# CLI interface - delegate to common module
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  run_main_workflow "$@"
+fi
