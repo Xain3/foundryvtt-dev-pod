@@ -11,3 +11,7 @@ patches/common/99-test-sync-loop.mjs
 # Malformed filename for testing purposes
 patches/entrypoint/07-.sh
 patches/common/07-.mjs
+
+# Ignore local specs
+.specs/local/*
+!.specs/local/README.md
