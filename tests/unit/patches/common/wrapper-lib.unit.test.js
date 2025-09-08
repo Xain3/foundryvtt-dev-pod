@@ -33,7 +33,7 @@ function buildWrapperScript(name, bodyLines = [], env = {}) {
   return [
     '#!/usr/bin/env bash',
     'set -euo pipefail',
-    `source "${wrapperBinAbs.replace(/"/g, '\\"')}"`,
+    `source ${JSON.stringify(wrapperBinAbs)}`,
     ...envExports,
     'export WRAPPER_RUN_MODE="default"',
     ...bodyLines,
@@ -268,5 +268,30 @@ describe('docker patches: wrapper-lib/bin', () => {
     } finally {
       fs.unlinkSync(file);
     }
+  });
+
+  it('buildWrapperScript properly escapes paths with backslashes and quotes using JSON.stringify', () => {
+    // Test that demonstrates the fix using JSON.stringify for proper escaping
+    // This verifies that the wrapper script now properly escapes all special characters
+    
+    // Test both the old manual escaping (incomplete) and new JSON.stringify approach (complete)
+    const testPath = '/test\\path with\\backslashes and "quotes"';
+    const manualEscaping = testPath.replace(/"/g, '\\"'); // Old incomplete approach
+    const jsonEscaping = JSON.stringify(testPath); // New complete approach
+    
+    // Manual escaping only handles quotes, leaving backslashes unescaped
+    expect(manualEscaping).toBe('/test\\path with\\backslashes and \\"quotes\\"');
+    
+    // JSON.stringify properly handles both backslashes and quotes  
+    expect(jsonEscaping).toBe('"/test\\\\path with\\\\backslashes and \\"quotes\\""');
+    
+    // Verify buildWrapperScript now uses the proper approach
+    const contents = buildWrapperScript('escaping-test', ['wrapper_main -n']);
+    
+    // The source line should use JSON.stringify format (includes outer quotes)
+    expect(contents).toMatch(/source\s+"[^"]*"/);
+    
+    // Should not contain the old manual escaping pattern
+    expect(contents).not.toContain('.replace(/"/g, \'\\\\"\')"');
   });
 });

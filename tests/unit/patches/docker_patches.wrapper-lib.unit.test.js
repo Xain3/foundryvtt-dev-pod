@@ -80,7 +80,7 @@ describe('docker patches: wrapper-lib/bin', () => {
     const contents = [
       '#!/usr/bin/env bash',
       'set -euo pipefail',
-      `source "${wrapperBinAbs.replace(/"/g, '\\"')}"`,
+      `source ${JSON.stringify(wrapperBinAbs)}`,
       'export WRAPPER_RUN_MODE="default"',
       'wrapper_main -n --x=1',
       ''
@@ -102,7 +102,7 @@ describe('docker patches: wrapper-lib/bin', () => {
     const contents = [
       '#!/usr/bin/env bash',
       'set -euo pipefail',
-      `source "${wrapperBinAbs.replace(/"/g, '\\"')}"`,
+      `source ${JSON.stringify(wrapperBinAbs)}`,
       'export WRAPPER_RUN_MODE="sync-loop"',
       'wrapper_main -n --y=2',
       ''
