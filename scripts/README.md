@@ -7,17 +7,20 @@ This directory contains the CLI entrypoints and thin wrappers for the FoundryVTT
 The scripts directory follows a modular pattern inspired by the `patches/` system:
 
 ### `scripts/` (CLI entrypoints)
+
 - **Purpose**: User-facing CLI scripts with minimal logic
 - **Pattern**: Thin wrappers that delegate to `common/` modules or `helpers/`
 - **Example**: `validate-config.js` - thin CLI wrapper
 
 ### `scripts/common/` (Script orchestration modules)
+
 - **Purpose**: Script-specific orchestration logic and CLI utilities
 - **Pattern**: Pure functions that can be easily tested, combining `helpers/` logic
 - **Example**: `validate-config.mjs` - contains validation workflow orchestration
 - **Rule**: Do NOT duplicate `helpers/` - only script-specific glue code and CLI utilities
 
 ### `scripts/entrypoint/` (Optional shell wrappers)
+
 - **Purpose**: POSIX shell wrappers for scripts (when needed)
 - **Pattern**: Similar to `patches/entrypoint/` - thin shell scripts that delegate to common modules
 - **Usage**: Currently unused, reserved for future shell wrapper needs
@@ -28,6 +31,10 @@ The scripts in this directory serve as the primary interfaces for interacting wi
 
 **Contents:**
 
+- [Directory Structure](#directory-structure)
+  - [`scripts/` (CLI entrypoints)](#scripts-cli-entrypoints)
+  - [`scripts/common/` (Script orchestration modules)](#scriptscommon-script-orchestration-modules)
+  - [`scripts/entrypoint/` (Optional shell wrappers)](#scriptsentrypoint-optional-shell-wrappers)
 - [Scripts](#scripts)
   - [`generate-compose.js`](#generate-composejs)
   - [`pod-handler.sh`](#pod-handlersh)
