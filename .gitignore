@@ -3,6 +3,7 @@ tmp-*
 coverage/clover.xml
 coverage/lcov-report
 coverage/lcov.info
+coverage/coverage-final.json
 
 # Ignore specific temporary files used in tests
 .jest-tmp-*
