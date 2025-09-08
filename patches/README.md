@@ -24,7 +24,7 @@ This folder contains the patching system used by container entrypoints and devel
 
 - `entrypoint/`: very thin shims invoked by the entrypoint. Keep this folder tidy.
 - `common/`: shared shell helpers and Node patch scripts.
-  - Core scripts: `wrapper-bin.sh`, `wrapper-lib.sh`, `install-components.mjs`, `sync-host-content.mjs`, `use-cache-or-stagger.mjs`, `XX-patch-entrypoint.sh.template`
+  - Core scripts: `wrapper-bin.sh`, `wrapper-lib.sh`, `install-components.mjs`, `sync-host-content.mjs`, `use-cache-or-stagger.mjs`, `templates/XX-patch-entrypoint.sh.template`
   - `helpers/`: additional helper modules (`argvParser.mjs`, `cache.mjs`, `common.mjs`, `componentInstaller.mjs`, `extractors.mjs`, `syncTaskBuilder.mjs`)
 
 ## Wrapper design
@@ -91,18 +91,18 @@ Examples:
 
 ### Adding a new wrapper
 
-1. **Start with the template**: Copy `common/XX-patch-entrypoint.sh.template` to `entrypoint/[NN-]my-patch.sh`:
+1. **Start with the template**: Copy `templates/XX-patch-entrypoint.sh.template` to `entrypoint/[NN-]my-patch.sh`:
 
-   ```bash
-   cp patches/common/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
-   ```
+```bash
+cp patches/templates/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
+```
 
-2. **Customize the wrapper**: Edit the copied file to set appropriate defaults:
+1. **Customize the wrapper**: Edit the copied file to set appropriate defaults:
    - Set `WRAPPER_RUN_MODE` ("default" for one-shot, "sync-loop" for background)
    - Optionally override `WRAPPER_NODE_BIN` if needed
    - Review the extensive template documentation for advanced options
 
-3. **Implement the Node.js script**: Create `common/my-patch.mjs` to receive:
+1. **Implement the Node.js script**: Create `common/my-patch.mjs` to receive:
    - `--procedural-number` and `--patch-name` (automatically injected)
    - Any additional arguments passed through the wrapper
 
@@ -128,7 +128,7 @@ wrapper_main "$@"
 
 - `common/helpers/*.mjs`: additional helper modules (e.g., `argvParser.mjs`, `cache.mjs`, `common.mjs`, `componentInstaller.mjs`, `extractors.mjs`, `syncTaskBuilder.mjs`).
 
-- `common/XX-patch-entrypoint.sh.template`: template for creating new wrappers.
+- `templates/XX-patch-entrypoint.sh.template`: template for creating new wrappers.
 
 ## Testing Infrastructure
 
@@ -149,7 +149,7 @@ npm run test:unit -- tests/unit/patches/  # Patch tests only
 
 ## Template Usage
 
-For consistent wrapper creation, use the comprehensive template at `common/XX-patch-entrypoint.sh.template`. This template includes:
+For consistent wrapper creation, use the comprehensive template at `templates/XX-patch-entrypoint.sh.template`. This template includes:
 
 - **Extensive inline documentation** covering the wrapper architecture and contracts
 - **Complete API reference** for wrapper-lib.sh and wrapper-bin.sh functions
@@ -159,7 +159,7 @@ For consistent wrapper creation, use the comprehensive template at `common/XX-pa
 Copy and customize the template for new wrappers:
 
 ```bash
-cp patches/common/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
+cp patches/templates/XX-patch-entrypoint.sh.template patches/entrypoint/30-my-patch.sh
 # Edit the copied file to set WRAPPER_RUN_MODE and other specifics
 ```
 
