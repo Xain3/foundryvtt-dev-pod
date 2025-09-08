@@ -196,6 +196,51 @@ Examples:
 [patch][error] Node executable '/nonexistent/node' not found
 ```
 
+## Windows Support
+
+For Windows developers, PowerShell wrapper scripts (`.ps1`) are provided that mirror the functionality of the shell wrappers but use PowerShell syntax. These provide failsafe logic for Windows environments.
+
+### PowerShell Wrappers
+
+The PowerShell wrappers are located in `entrypoint/` with the same naming pattern as the shell wrappers:
+
+- `00-use-cache-or-stagger.ps1`: Windows wrapper for cache and stagger logic
+- `10-sync-host-content.ps1`: Windows wrapper for syncing host content  
+- `20-install-components.ps1`: Windows wrapper for installing components
+
+### Windows Usage
+
+**PowerShell (recommended for Windows):**
+```powershell
+# Run a patch directly with PowerShell
+.\patches\entrypoint\10-sync-host-content.ps1 --some-flag
+
+# Or using pwsh if PowerShell Core is installed
+pwsh .\patches\entrypoint\10-sync-host-content.ps1 --some-flag
+```
+
+**Direct Node execution (cross-platform alternative):**
+```powershell
+# Run the Node script directly (bypasses wrapper logic)
+node patches\common\sync-host-content.mjs --some-flag
+```
+
+### Failsafe Logic
+
+Each PowerShell wrapper includes:
+
+- **Node.js detection**: Checks if `node` is available in PATH
+- **Path resolution**: Safely resolves the path to the corresponding `.mjs` script
+- **Error handling**: Provides clear error messages if Node.js is missing or script not found
+- **Argument forwarding**: Passes all arguments through to the Node.js script
+- **Exit code preservation**: Returns the same exit code as the Node.js script
+
+### Requirements
+
+- **Node.js**: Must be installed and available in PATH
+- **PowerShell**: Windows PowerShell 5.1+ or PowerShell Core 6.0+
+- **Execution Policy**: May need to set execution policy: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
 ## Dry-run examples
 
 ``` bash

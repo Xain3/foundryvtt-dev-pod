@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * @file install-components.mjs
  * @description Installs systems, modules, and worlds based on container-config, supporting manifest URLs and local paths with caching, retries, and atomic directory installs.
