@@ -2,9 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import zlib from 'node:zlib';
-
-// eslint-disable-next-line import/no-commonjs
-const { ComponentInstaller } = require('../../../../../patches/common/helpers/componentInstaller.mjs');
+import { jest } from '@jest/globals';
+import { ComponentInstaller } from '#patches/common/helpers/componentInstaller.mjs';
 
 function padToBlockSize(len, block = 512) { return (block - (len % block)) % block; }
 function buildTar(entries) {
@@ -162,8 +161,6 @@ describe('patches/common/helpers/componentInstaller.mjs', () => {
       COMPONENT_CACHE: cacheDir,
       PATCH_FORCE_NODE_EXTRACT: '1'
     };
-  // eslint-disable-next-line import/no-commonjs
-  const { ComponentInstaller } = require('../../../../../patches/common/helpers/componentInstaller.mjs');
     const spy = jest.spyOn(process, 'exit').mockImplementation((code) => { throw new Error(`exit:${code}`); });
     try {
       // Constructor will attempt to read config and exit
@@ -182,8 +179,6 @@ describe('patches/common/helpers/componentInstaller.mjs', () => {
     const cfgPath = path.join(tmpRoot, 'bad-versions.json');
     fs.writeFileSync(cfgPath, JSON.stringify(cfg));
     const env = { FOUNDRY_DATA_DIR: dataDir, CONTAINER_CONFIG_PATH: cfgPath, COMPONENT_CACHE: cacheDir };
-  // eslint-disable-next-line import/no-commonjs
-  const { ComponentInstaller } = require('../../../../../patches/common/helpers/componentInstaller.mjs');
     const spy = jest.spyOn(process, 'exit').mockImplementation((code) => { throw new Error(`exit:${code}`); });
     try {
       // @ts-ignore
@@ -201,8 +196,6 @@ describe('patches/common/helpers/componentInstaller.mjs', () => {
     const cfgPath = path.join(tmpRoot, 'missing-major.json');
     fs.writeFileSync(cfgPath, JSON.stringify(cfg));
     const env = { FOUNDRY_VERSION: '13.100', FOUNDRY_DATA_DIR: dataDir, CONTAINER_CONFIG_PATH: cfgPath, COMPONENT_CACHE: cacheDir };
-  // eslint-disable-next-line import/no-commonjs
-  const { ComponentInstaller } = require('../../../../../patches/common/helpers/componentInstaller.mjs');
     const spy = jest.spyOn(process, 'exit').mockImplementation((code) => { throw new Error(`exit:${code}`); });
     try {
       // @ts-ignore
@@ -220,8 +213,6 @@ describe('patches/common/helpers/componentInstaller.mjs', () => {
     const cfgPath = path.join(tmpRoot, 'unsupported.json');
     fs.writeFileSync(cfgPath, JSON.stringify(cfg));
     const env = { FOUNDRY_VERSION: '13.0.0', FOUNDRY_DATA_DIR: dataDir, CONTAINER_CONFIG_PATH: cfgPath, COMPONENT_CACHE: cacheDir };
-  // eslint-disable-next-line import/no-commonjs
-  const { ComponentInstaller } = require('../../../../../patches/common/helpers/componentInstaller.mjs');
     const spy = jest.spyOn(process, 'exit').mockImplementation((code) => { throw new Error(`exit:${code}`); });
     try {
       // @ts-ignore

@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * @file sync-host-content.mjs
+ * @description Synchronizes module and world content from host to container with rsync
+ * @path patches/common/sync-host-content.mjs
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";

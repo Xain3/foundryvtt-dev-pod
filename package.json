@@ -3,7 +3,29 @@
   "version": "0.1.0",
   "description": "CLI tools to generate Docker Compose and manage dev pods for Foundry VTT (multi-version dev)",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./helpers/config-validator.js"
+    },
+    "./helpers/config-validator": "./helpers/config-validator.js",
+    "./scripts/generate-compose": "./scripts/generate-compose.js",
+    "./scripts/validate-config": "./scripts/validate-config.js",
+    "./babel.config.cjs": "./babel.config.cjs",
+    "./jsconfig.json": "./jsconfig.json",
+    "./*": "./*",
+    "./scripts/*": "./scripts/*",
+    "./helpers/*": "./helpers/*",
+    "./config/*": "./config/*",
+    "./patches/*": "./patches/*",
+    "./patches/entrypoint/*": "./patches/entrypoint/*",
+    "./patches/common/*": "./patches/common/*",
+    "./tests/unit/*": "./tests/unit/*",
+    "./tests/integration/*": "./tests/integration/*",
+    "./docs/*": "./docs/*",
+    "./examples/*": "./examples/*",
+    "./schemas/*": "./schemas/*"
+  },
   "bin": {
     "fvtt-compose-gen": "scripts/generate-compose.js",
     "fvtt-pod": "scripts/pod-handler.sh"
@@ -11,7 +33,11 @@
   "files": [
     "scripts/generate-compose.js",
     "scripts/pod-handler.sh",
+    "scripts/validate-config.js",
+    "helpers/",
     "patches/",
+    "babel.config.cjs",
+    "jsconfig.json",
     "README.md",
     "LICENSE"
   ],
@@ -20,17 +46,28 @@
   },
   "dependencies": {
     "ajv": "^8.17.1",
-    "js-yaml": "^4.1.0"
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "babel-jest": "^29.7.0",
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.23.0",
-    "jest": "^30.1.3"
+    "babel-jest": "^30.1.2",
+    "eslint": "^9.9.0",
+    "jest": "^30.1.3",
+    "npm-package-json-lint": "^9.0.0"
   },
   "scripts": {
-    "test": "jest",
-    "test:ci": "jest --coverage",
-    "check-coverage": "node .github/scripts/check-coverage.js"
+    "lint": "eslint scripts patches --ext .js,.mjs",
+    "test": "npm run lint && npm run test:unit && npm run test:integration",
+    "test:unit": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit/",
+    "test:integration": "node --experimental-vm-modules ./node_modules/.bin/jest tests/integration/ --maxWorkers=1",
+    "test:watch": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit/ --watch",
+    "test:debug": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit/ --inspect-brk",
+    "test:combined": "node --experimental-vm-modules ./node_modules/.bin/jest tests/unit tests/integration --coverage --maxWorkers=1",
+    "test:ci": "npm run lint && npm run test:combined",
+    "check-coverage": "node .github/scripts/check-coverage.cjs",
+    "validate:package": "bash ./scripts/validate-package.sh"
   }
 }

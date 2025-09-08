@@ -1,0 +1,9 @@
+{
+  "jest.runMode": {
+    "type": "on-save",
+    "onSave": "test-file"
+  },
+  "jest.jestCommandLine": "node --experimental-vm-modules ./node_modules/.bin/jest",
+  "jest.rootPath": "",
+  "jest.disabledWorkspaceFolders": []
+}

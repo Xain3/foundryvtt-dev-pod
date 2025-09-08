@@ -1,8 +1,13 @@
-const path = require('node:path');
-const { runBashScript } = require('../../../utils/shell.js');
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { jest } from '@jest/globals';
+import { runBashScript } from '#tests/utils/shell.js';
 
 jest.setTimeout(20000);
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // __dirname is .../tests/unit/patches/common; go up 4 levels to repo root
 const rootDir = path.resolve(__dirname, '../../../../');
 
@@ -42,7 +47,7 @@ describe('wrapper-bin.sh thin wrappers', () => {
       env: { ...process.env, DRY_RUN: '1', WRAPPER_TEST_MODE: '1' },
     });
     expect(res.code).toBe(0);
-  expect(res.stdout).toMatch(/Would run initial sync: [\s\S]*sync-host-content\.mjs[\s\S]* --initial-only/);
+  expect(res.stdout).toMatch(/Would run initial sync: .*sync-host-content\.mjs.* --initial-only/s);
   });
 
   it('accepts --wrapper-target overrides (comma separated)', async () => {
@@ -63,11 +68,9 @@ describe('wrapper-lib.sh normalization', () => {
   it('skips invalid normalized paths in collect_wrapper_targets', async () => {
     // Build a small shim that sources wrapper-lib and calls collect_wrapper_targets
     const shim = `#!/usr/bin/env bash\nset -euo pipefail\nsource '${wrapperLib}'\ncollect_wrapper_targets '${commonDir}' 'mjs' --wrapper-target 'does-not-exist,install-components'`;
-  const os = require('os');
-  const fs = require('fs/promises');
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'omh-shim-'));
-  const shimPath = path.join(tmpDir, 'shim_collect.sh');
-  await fs.writeFile(shimPath, shim, { mode: 0o755 });
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'omh-shim-'));
+    const shimPath = path.join(tmpDir, 'shim_collect.sh');
+    await fs.writeFile(shimPath, shim, { mode: 0o755 });
     try {
       const res = await runBashScript(shimPath, [], {});
       // Should output only valid target(s) that resolve under commonDir

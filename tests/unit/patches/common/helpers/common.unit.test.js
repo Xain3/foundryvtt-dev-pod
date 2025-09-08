@@ -1,9 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
-// After jest/babel config, we can require() the .mjs module
-// eslint-disable-next-line import/no-commonjs
-const loadNamed = async () => require('../../../../../patches/common/helpers/common.mjs');
-const loadCommon = async () => loadNamed().then((m) => m.default || m);
+import * as namedExports from '#patches/common/helpers/common.mjs';
+import defaultExport from '#patches/common/helpers/common.mjs';
 
 describe('patches/common/helpers/common.mjs', () => {
   let common;
@@ -14,8 +12,8 @@ describe('patches/common/helpers/common.mjs', () => {
     // Ensure clean temp area
     if (fs.existsSync(tmpRoot)) fs.rmSync(tmpRoot, { recursive: true, force: true });
     fs.mkdirSync(tmpRoot, { recursive: true });
-    named = await loadNamed();
-    common = await loadCommon();
+    named = namedExports;
+    common = defaultExport;
   });
 
   afterAll(() => {

@@ -1,14 +1,26 @@
 #!/usr/bin/env node
+/**
+ * @file check-coverage.cjs
+ * @description Check test coverage against defined thresholds per folder
+ * @path .github/scripts/check-coverage.cjs
+ */
+
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Maximum directory search depth when scanning for coverage-summary.json
+ * relative to the repository root.
+ * This avoids deep traversal into node_modules or .git directories.
+ */
+const MAX_SEARCH_DEPTH = 4;
+
 function readCoverageSummary(filePath) {
-  if (!fs.existsSync(filePath)) {
-    console.error(`Coverage summary not found at: ${filePath}`);
-    process.exit(1);
+  if (fs.existsSync(filePath)) {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return data;
   }
-  const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  return data;
+  return null;
 }
 
 function normalizePath(p) {
@@ -80,9 +92,68 @@ function aggregate(files) {
   return { agg, pct };
 }
 
+function findCoverageSummary() {
+  const candidates = [];
+
+  if (process.env.COVERAGE_SUMMARY) candidates.push(process.env.COVERAGE_SUMMARY);
+
+  // Common location relative to current working directory
+  candidates.push(path.join(process.cwd(), 'coverage', 'coverage-summary.json'));
+
+  // When script is run from .github/scripts, move up to repo root
+  const repoRoot = path.resolve(__dirname, '..', '..');
+  candidates.push(path.join(repoRoot, 'coverage', 'coverage-summary.json'));
+
+  // Fallback: try one level up from repo root (in case of worktrees/CI checkout differences)
+  candidates.push(path.join(repoRoot, '..', 'coverage', 'coverage-summary.json'));
+
+  for (const c of candidates) {
+    const resolved = path.resolve(c);
+    const data = readCoverageSummary(resolved);
+    if (data) return { data, path: resolved };
+  }
+
+  // Fallback: scan repo root for any coverage-summary.json (avoid deep traversal in node_modules/.git)
+  const searchRoot = path.resolve(__dirname, '..', '..');
+  let foundPath = null;
+  try {
+    const queue = [searchRoot];
+    while (queue.length && !foundPath) {
+      const dir = queue.shift();
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name === 'node_modules' || entry.name === '.git') continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          const max_search_depth = process.env.MAX_SEARCH_DEPTH ? Number(process.env.MAX_SEARCH_DEPTH) : MAX_SEARCH_DEPTH;
+          // Only descend a limited depth: relative depth <= max_search_depth
+          const depth = full.replace(searchRoot, '').split(path.sep).filter(Boolean).length;
+          if (depth <= max_search_depth) queue.push(full);
+        } else if (entry.name === 'coverage-summary.json' && /coverage/.test(full)) {
+          foundPath = full;
+          break;
+        }
+      }
+    }
+  } catch {
+    // ignore scanning errors
+  }
+  if (foundPath) {
+    const data = readCoverageSummary(foundPath);
+    if (data) return { data, path: foundPath };
+  }
+
+  return { data: null, tried: candidates.map((c) => path.resolve(c)) };
+}
+
 function main() {
-  const summaryPath = process.env.COVERAGE_SUMMARY || path.join(process.cwd(), 'coverage', 'coverage-summary.json');
-  const summary = readCoverageSummary(summaryPath);
+  const found = findCoverageSummary();
+  if (!found.data) {
+    console.error('Coverage summary not found. Tried the following paths:');
+    for (const p of found.tried) console.error(` - ${p}`);
+    process.exit(1);
+  }
+  const summary = found.data;
 
   const entries = Object.entries(summary)
     .filter(([k]) => k !== 'total')

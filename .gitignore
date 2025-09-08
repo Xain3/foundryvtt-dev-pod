@@ -1,2 +1,13 @@
 node_modules
-coverage
+tmp-*
+coverage/clover.xml
+coverage/lcov-report
+coverage/lcov.info
+
+# Ignore specific temporary files used in tests
+.jest-tmp-*
+patches/entrypoint/99-test-sync-loop.sh
+patches/common/99-test-sync-loop.mjs
+# Malformed filename for testing purposes
+patches/entrypoint/07-.sh
+patches/common/07-.mjs

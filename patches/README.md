@@ -1,9 +1,31 @@
-# Patches
+# Patches <!-- omit in toc -->
+
+## Overview <!-- omit in toc -->
 
 This folder contains the patching system used by container entrypoints and development workflows.
 
+**Contents:**
+
+- [Structure](#structure)
+- [Wrapper design](#wrapper-design)
+  - [Modes](#modes)
+  - [Environment](#environment)
+  - [Overriding target script(s)](#overriding-target-scripts)
+  - [Script extension](#script-extension)
+  - [Adding a new wrapper](#adding-a-new-wrapper)
+- [Common files](#common-files)
+- [Testing Infrastructure](#testing-infrastructure)
+- [Template Usage](#template-usage)
+- [Help System](#help-system)
+- [Error Handling \& Logging](#error-handling--logging)
+- [Dry-run examples](#dry-run-examples)
+
+## Structure
+
 - `entrypoint/`: very thin shims invoked by the entrypoint. Keep this folder tidy.
 - `common/`: shared shell helpers and Node patch scripts.
+  - Core scripts: `wrapper-bin.sh`, `wrapper-lib.sh`, `install-components.mjs`, `sync-host-content.mjs`, `use-cache-or-stagger.mjs`, `XX-patch-entrypoint.sh.template`
+  - `helpers/`: additional helper modules (`argvParser.mjs`, `cache.mjs`, `common.mjs`, `componentInstaller.mjs`, `extractors.mjs`, `syncTaskBuilder.mjs`)
 
 ## Wrapper design
 
@@ -102,7 +124,11 @@ wrapper_main "$@"
 
 - `common/wrapper-lib.sh`: pure helper functions, safe to source.
 - `common/wrapper-bin.sh`: generic executable logic used by wrappers.
-- `common/*.mjs`: Node-based patch implementations.
+- `common/*.mjs`: Node-based patch implementations (e.g., `install-components.mjs`, `sync-host-content.mjs`, `use-cache-or-stagger.mjs`).
+
+- `common/helpers/*.mjs`: additional helper modules (e.g., `argvParser.mjs`, `cache.mjs`, `common.mjs`, `componentInstaller.mjs`, `extractors.mjs`, `syncTaskBuilder.mjs`).
+
+- `common/XX-patch-entrypoint.sh.template`: template for creating new wrappers.
 
 ## Testing Infrastructure
 

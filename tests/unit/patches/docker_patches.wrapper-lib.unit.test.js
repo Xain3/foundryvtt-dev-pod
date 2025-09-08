@@ -1,7 +1,11 @@
-const { spawnSync } = require('node:child_process');
-const path = require('node:path');
-const fs = require('node:fs');
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
+const TEMP_WRAPPER = '99-test-sync-loop.sh';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // __dirname is .../tests/unit/patches; go up 3 levels to reach repo root
 const repoRoot = path.resolve(__dirname, '../../..');
 const commonDir = path.join(repoRoot, 'patches', 'common');
@@ -76,7 +80,7 @@ describe('docker patches: wrapper-lib/bin', () => {
     const contents = [
       '#!/usr/bin/env bash',
       'set -euo pipefail',
-      `source "${wrapperBinAbs.replace(/"/g, '\\"')}"`,
+      `source ${JSON.stringify(wrapperBinAbs)}`,
       'export WRAPPER_RUN_MODE="default"',
       'wrapper_main -n --x=1',
       ''
@@ -98,12 +102,12 @@ describe('docker patches: wrapper-lib/bin', () => {
     const contents = [
       '#!/usr/bin/env bash',
       'set -euo pipefail',
-      `source "${wrapperBinAbs.replace(/"/g, '\\"')}"`,
+      `source ${JSON.stringify(wrapperBinAbs)}`,
       'export WRAPPER_RUN_MODE="sync-loop"',
       'wrapper_main -n --y=2',
       ''
     ].join('\n');
-    const file = makeTempWrapper('98-test-sync-loop.sh', contents);
+    const file = makeTempWrapper(TEMP_WRAPPER, contents);
 
     const res = runBash(file, [], {});
     try {
