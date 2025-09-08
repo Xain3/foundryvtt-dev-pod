@@ -6,7 +6,7 @@ The directory follows an entrypoint + common pattern to improve testability, reu
 
 ## Directory Structure <!-- omit in toc -->
 
-```
+``` md
 scripts/
 ├── entrypoint/          # Thin shell wrappers (optional)
 │   ├── XX-script-entrypoint.template  # Template for new script entrypoints
@@ -48,6 +48,8 @@ The scripts in this directory serve as the primary interfaces for interacting wi
   - [`validate-package-json.js` Options](#validate-package-jsonjs-options)
   - [`validate-package.sh` Options](#validate-packagesh-options)
 - [Development Notes](#development-notes)
+  - [Creating New CLI Tools](#creating-new-cli-tools)
+  - [Architecture Guidelines](#architecture-guidelines)
 - [Examples](#examples)
 
 ## Scripts
@@ -108,6 +110,7 @@ This section details the command-line interfaces for the executable scripts in t
 - `-h, --help`: Show help information
 
 Exit codes:
+
 - `0`: Status check successful
 - `1`: General error (invalid arguments, etc.)
 - `2`: Pod not detected or configuration invalid
@@ -194,6 +197,7 @@ No CLI options. Runs multiple validations on package.json.
 To create a new CLI tool following the entrypoint+common pattern:
 
 1. **Copy the template**: Use `scripts/entrypoint/XX-script-entrypoint.template` as a starting point
+
    ```bash
    cp scripts/entrypoint/XX-script-entrypoint.template scripts/entrypoint/my-tool
    chmod +x scripts/entrypoint/my-tool
