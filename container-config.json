@@ -1,0 +1,30 @@
+{
+  "systems": {
+    "dnd5e": {
+      "name": "D&D 5th Edition",
+      "manifest": "https://gitlab.com/foundrynet/dnd5e/-/raw/master/system.json",
+      "path": "",
+      "install_at_startup": true
+    }
+  },
+  "modules": {},
+  "composition": {
+    "baseImage": "felddy/foundryvtt",
+    "user": "0:0",
+    "version_params": {
+      "name": "foundry-v{version}",
+      "tag": "release",
+      "port": "300{version}",
+      "versionDir": "v{version}",
+      "envSuffix": "v{version}"
+    }
+  },
+  "versions": {
+    "13": {
+      "install": {
+        "systems": { "dnd5e": {} },
+        "modules": {}
+      }
+    }
+  }
+}
