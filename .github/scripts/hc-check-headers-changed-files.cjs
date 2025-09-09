@@ -83,7 +83,7 @@ function runHeaderChecks(files, configPath) {
   try {
     // Ensure we're running from the project root (two levels up from this script)
     process.chdir(path.join(__dirname, '..', '..'));
-    const escapedFiles = files.map(f => `"${f.replace(/"/g, '\\"')}"`).join(' ');
+    const escapedFiles = files.map(f => `"${f.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`).join(' ');
     const cfg = configPath ? `--config ${configPath} ` : '';
     const cmd = `node scripts/check-file-headers.mjs ${cfg}${escapedFiles}`;
     console.log(`[hc] Running header check: ${cmd}`);
