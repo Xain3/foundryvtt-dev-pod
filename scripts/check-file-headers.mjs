@@ -165,18 +165,17 @@ function main(argv) {
   const requiredFields = config.requiredFields || REQUIRED_FIELDS;
   const ignoreGlobs = config.ignoreGlobs || [];
 
-  const micromatch = (patterns, value) => {
-    // Minimal matcher: only supports '*' wildcard for this script to avoid new dep.
-    return patterns.some(p => {
-      const regex = new RegExp('^' + p.split('*').map(s => s.replace(/[-/\\^$+?.()|[\]{}]/g, r => '\\' + r)).join('.*') + '$');
-      return regex.test(value);
-    });
-  };
+  // Precompile patterns to regexes once
+  function compilePatterns(patterns) {
+    return patterns.map(p =>
+      new RegExp('^' + p.split('*').map(s => s.replace(/[-/\\^$+?.()|[\]{}]/g, r => '\\' + r)).join('.*') + '$')
+    );
+  }
 
-  let hadErrors = false;
-  for (const f of files) {
+  const micromatch = (regexes, value) => {
+  const ignoreGlobsRegexes = compilePatterns(ignoreGlobs);
     if (!isSourceFile(f)) continue;
-    if (ignoreGlobs.length && micromatch(ignoreGlobs, f)) continue;
+    if (ignoreGlobs.length && micromatch(ignoreGlobsRegexes, f)) continue;
     if (!fs.existsSync(f)) {
       console.warn(`[headers][warn] Skipping missing file ${f}`);
       continue;
