@@ -7,6 +7,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const _ = require('lodash');
 
 /**
  * Determines changed files between the current HEAD and a specified base ref,
@@ -26,7 +27,7 @@ function determineChangedFiles(baseRef, matchPattern = '\\.(m?js|cjs)$') {
     // Split by null, filter by pattern, and return as array
     const changedFiles = changedRaw
       .split('\0')
-      .filter(file => file && new RegExp(matchPattern).test(file));
+      .filter(file => file && new RegExp(_.escapeRegExp(matchPattern)).test(file));
 
     return changedFiles;
   } catch (error) {
