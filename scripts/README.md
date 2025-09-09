@@ -263,3 +263,45 @@ To create a new CLI tool following the entrypoint+common pattern:
 - Validate package.json: `npx scripts/validate-package-json.js`
 - Run package validation script: `./scripts/validate-package.sh`
 - Generate compose with custom output: `npx fvtt-compose-gen -c container-config.json -o custom-compose.yml`
+
+## Header Checker
+
+This repository enforces a JSDoc-style file header on source files via a lightweight script and a GitHub Action.
+
+- **Script**: `scripts/check-file-headers.mjs`
+- **Purpose**: Validate that changed `*.js`, `*.mjs`, and `*.cjs` source files start with a JSDoc header block containing at minimum `@file`, `@description`, and `@path`.
+- **CI**: `.github/workflows/header-check.yml` runs the checker on pull requests and will fail the PR if required tags are missing.
+
+Usage (local):
+
+```bash
+# validate headers for files changed vs origin/main
+npm run check:headers
+
+# validate specific files
+node scripts/check-file-headers.mjs --config header-check.config.json path/to/file.js
+```
+
+Configuration
+
+Place `header-check.config.json` at the repository root to customize behavior. Supported keys:
+
+- `requiredFields` (array): additional JSDoc tags to require (default: `["@file","@description","@path"]`).
+- `ignoreGlobs` (array): glob-like patterns (supports `*`) to skip files from validation.
+
+Example `header-check.config.json`:
+
+```json
+{
+  "ignoreGlobs": ["tests/*", "coverage/*", "examples/*"],
+  "requiredFields": ["@file", "@description", "@path"]
+}
+```
+
+Notes
+
+- The script tolerates an optional shebang (`#!`) and leading blank lines before the header block.
+- The `@file` tag is validated against the actual filename when present; mismatches are reported as errors.
+- The CI action only runs for non-draft pull requests and only examines JS source file changes.
+
+If you'd like the CI to require additional tags or relax rules for particular directories, edit `header-check.config.json`.

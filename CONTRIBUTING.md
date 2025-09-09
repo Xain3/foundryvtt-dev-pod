@@ -223,6 +223,33 @@ Before marking Ready for Review ensure:
 - [ ] Ran npm test + (optionally) coverage locally
 ```
 
+### Automated Header Enforcement
+
+All changed `*.js`, `*.mjs`, `*.cjs` files in a pull request are validated by the "Header Check" GitHub Action to ensure they begin with the required JSDoc file header block containing at minimum: `@file`, `@description`, `@path`.
+
+Run locally before pushing:
+
+```bash
+npm run check:headers
+```
+
+To customize (rare), create a JSON config and invoke the script directly:
+
+```bash
+node scripts/check-file-headers.mjs --config header-check.config.json path/to/file.js
+```
+
+Current required fields can be extended by editing the optional config JSON with:
+
+```json
+{
+  "requiredFields": ["@file", "@description", "@path", "@author"],
+  "ignoreGlobs": ["tests/*"]
+}
+```
+
+Files missing headers or tags will cause the CI job to fail.
+
 Rebase onto `master` if needed to avoid noisy merge commits.
 
 ---
